@@ -1,8 +1,10 @@
 # glioblastoma-evolution
 
-This branch, `history-conditioned-forecast-slim`, contains the prefix-history Neural ODE experiment only.
+This branch is the merged, cleaned prefix-history forecast experiment.
 
-The task is:
+It keeps the history-conditioned Neural ODE work and strips out the unrelated physics/recovered-artifact branch baggage.
+
+The goal is:
 
 ```text
 predict the next MRI state from all earlier MRI states
@@ -115,9 +117,9 @@ The current prefix-history smoke run is functional, but the learned model still 
 | `patient_007` | `105` | 3 | 1 | 0.04039 | 0.00396 | 0.16903 | 0.03225 |
 | `patient_067` | `152` | 3 | 1 | 0.06532 | 0.00479 | 0.22187 | 0.03243 |
 
-## Files
+## Files Kept In This Branch
 
-This slim branch keeps only the files needed to run the experiment:
+Only the files needed for this experiment are kept here:
 
 - [`.gitignore`](/Users/tushar/Documents/Repositories/Glioblastoma/.gitignore)
 - [`README.md`](/Users/tushar/Documents/Repositories/Glioblastoma/README.md)
