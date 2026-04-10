@@ -1,0 +1,785 @@
+{
+  "run_name": "physics_run_tiny_baseline_holdout_64_patient_067",
+  "repo_root": "/Users/tushar/Documents/Repositories/Glioblastoma",
+  "device": "mps",
+  "patients": [
+    "patient_067"
+  ],
+  "patient_weeks": {
+    "patient_067": [
+      92,
+      109,
+      124,
+      136,
+      152
+    ]
+  },
+  "num_pairs": 4,
+  "train_pair_count": 3,
+  "holdout_pair_count": 1,
+  "resize_dim": [
+    64,
+    64,
+    64
+  ],
+  "epochs": 60,
+  "batch_size": 1,
+  "lr": 0.0003,
+  "weight_decay": 1e-05,
+  "model_size": "tiny",
+  "holdout_last_pair": true,
+  "forecast_weeks": [
+    12.0,
+    24.0
+  ],
+  "therapy_weeks": 24.0,
+  "seed": 7,
+  "checkpoint": "/Users/tushar/Documents/Repositories/Glioblastoma/runs/physics_run_tiny_baseline_holdout_64_patient_067/physics_glioma_model_tiny.pt",
+  "epoch_details": [
+    {
+      "epoch": 1,
+      "total_loss": 0.30712994933128357,
+      "fit_loss": 0.0017887419380713254,
+      "smooth_loss": 0.010190560792883238,
+      "variance_penalty": 0.030533100788791973,
+      "d_min": 0.10784994065761566,
+      "d_max": 0.4588034451007843
+    },
+    {
+      "epoch": 2,
+      "total_loss": 0.21819157401720682,
+      "fit_loss": 0.001789275595607857,
+      "smooth_loss": 0.011001206003129482,
+      "variance_penalty": 0.021639129767815273,
+      "d_min": 0.1165599375963211,
+      "d_max": 0.4595373868942261
+    },
+    {
+      "epoch": 3,
+      "total_loss": 0.08802474786837895,
+      "fit_loss": 0.0017912770078207056,
+      "smooth_loss": 0.010770258804162344,
+      "variance_penalty": 0.008622270077466965,
+      "d_min": 0.12435968965291977,
+      "d_max": 0.45798808336257935
+    },
+    {
+      "epoch": 4,
+      "total_loss": 0.0024965254318279526,
+      "fit_loss": 0.0017997516843024641,
+      "smooth_loss": 0.01015307599057754,
+      "variance_penalty": 6.866206725438435e-05,
+      "d_min": 0.12116353213787079,
+      "d_max": 0.4633137285709381
+    },
+    {
+      "epoch": 5,
+      "total_loss": 0.0018113071758610506,
+      "fit_loss": 0.0018016962761369844,
+      "smooth_loss": 0.009610960880915323,
+      "variance_penalty": 0.0,
+      "d_min": 0.13273054361343384,
+      "d_max": 0.46010273694992065
+    },
+    {
+      "epoch": 6,
+      "total_loss": 0.0018131037553151448,
+      "fit_loss": 0.0018038766575045884,
+      "smooth_loss": 0.009227105105916658,
+      "variance_penalty": 0.0,
+      "d_min": 0.1367308646440506,
+      "d_max": 0.4644586443901062
+    },
+    {
+      "epoch": 7,
+      "total_loss": 0.0018144198111258447,
+      "fit_loss": 0.0018054487785169233,
+      "smooth_loss": 0.008971005057295164,
+      "variance_penalty": 0.0,
+      "d_min": 0.1399948000907898,
+      "d_max": 0.46650996804237366
+    },
+    {
+      "epoch": 8,
+      "total_loss": 0.001814871308548997,
+      "fit_loss": 0.001806084056928133,
+      "smooth_loss": 0.008787215066452822,
+      "variance_penalty": 0.0,
+      "d_min": 0.14057445526123047,
+      "d_max": 0.46841681003570557
+    },
+    {
+      "epoch": 9,
+      "total_loss": 0.0018147196193846564,
+      "fit_loss": 0.0018060597067233175,
+      "smooth_loss": 0.008659968773523966,
+      "variance_penalty": 0.0,
+      "d_min": 0.14452111721038818,
+      "d_max": 0.4680328071117401
+    },
+    {
+      "epoch": 10,
+      "total_loss": 0.0018145318220679958,
+      "fit_loss": 0.0018059722109076877,
+      "smooth_loss": 0.008559556057055792,
+      "variance_penalty": 0.0,
+      "d_min": 0.14602290093898773,
+      "d_max": 0.46829625964164734
+    },
+    {
+      "epoch": 11,
+      "total_loss": 0.00181397155392915,
+      "fit_loss": 0.001805485226213932,
+      "smooth_loss": 0.008486388251185417,
+      "variance_penalty": 0.0,
+      "d_min": 0.1471633017063141,
+      "d_max": 0.4684325158596039
+    },
+    {
+      "epoch": 12,
+      "total_loss": 0.0018136724247597158,
+      "fit_loss": 0.00180524443082201,
+      "smooth_loss": 0.008427981287240982,
+      "variance_penalty": 0.0,
+      "d_min": 0.14663556218147278,
+      "d_max": 0.4695775806903839
+    },
+    {
+      "epoch": 13,
+      "total_loss": 0.0018129916085551183,
+      "fit_loss": 0.001804607124843945,
+      "smooth_loss": 0.008384433264533678,
+      "variance_penalty": 0.0,
+      "d_min": 0.14738573133945465,
+      "d_max": 0.4696495532989502
+    },
+    {
+      "epoch": 14,
+      "total_loss": 0.0018126801975692313,
+      "fit_loss": 0.001804329571314156,
+      "smooth_loss": 0.008350632463892302,
+      "variance_penalty": 0.0,
+      "d_min": 0.14917196333408356,
+      "d_max": 0.46855485439300537
+    },
+    {
+      "epoch": 15,
+      "total_loss": 0.0018119480810128152,
+      "fit_loss": 0.0018036245892290026,
+      "smooth_loss": 0.008323535012702147,
+      "variance_penalty": 0.0,
+      "d_min": 0.14838559925556183,
+      "d_max": 0.46972593665122986
+    },
+    {
+      "epoch": 16,
+      "total_loss": 0.0018114479219851394,
+      "fit_loss": 0.0018031455886860688,
+      "smooth_loss": 0.008302335627377033,
+      "variance_penalty": 0.0,
+      "d_min": 0.14871183037757874,
+      "d_max": 0.4697462320327759
+    },
+    {
+      "epoch": 17,
+      "total_loss": 0.001811125335128357,
+      "fit_loss": 0.0018028404447250068,
+      "smooth_loss": 0.008284918343027433,
+      "variance_penalty": 0.0,
+      "d_min": 0.14895686507225037,
+      "d_max": 0.4697600305080414
+    },
+    {
+      "epoch": 18,
+      "total_loss": 0.0018103869903522234,
+      "fit_loss": 0.0018021162638130288,
+      "smooth_loss": 0.008270734921097755,
+      "variance_penalty": 0.0,
+      "d_min": 0.1491423100233078,
+      "d_max": 0.4697696566581726
+    },
+    {
+      "epoch": 19,
+      "total_loss": 0.0018099048562968771,
+      "fit_loss": 0.0018016458294975262,
+      "smooth_loss": 0.008259067001442114,
+      "variance_penalty": 0.0,
+      "d_min": 0.15030606091022491,
+      "d_max": 0.46856340765953064
+    },
+    {
+      "epoch": 20,
+      "total_loss": 0.0018093922602323194,
+      "fit_loss": 0.0018011431869429846,
+      "smooth_loss": 0.008249041313926378,
+      "variance_penalty": 0.0,
+      "d_min": 0.1503935158252716,
+      "d_max": 0.4685617685317993
+    },
+    {
+      "epoch": 21,
+      "total_loss": 0.0018088780343532562,
+      "fit_loss": 0.001800637672810505,
+      "smooth_loss": 0.008240374426047007,
+      "variance_penalty": 0.0,
+      "d_min": 0.15045879781246185,
+      "d_max": 0.4685601592063904
+    },
+    {
+      "epoch": 22,
+      "total_loss": 0.0018083634592282276,
+      "fit_loss": 0.001800130713187779,
+      "smooth_loss": 0.00823274968812863,
+      "variance_penalty": 0.0,
+      "d_min": 0.15050745010375977,
+      "d_max": 0.4685586988925934
+    },
+    {
+      "epoch": 23,
+      "total_loss": 0.0018076709044786792,
+      "fit_loss": 0.0017994447844102979,
+      "smooth_loss": 0.00822610097626845,
+      "variance_penalty": 0.0,
+      "d_min": 0.1538287252187729,
+      "d_max": 0.4720896780490875
+    },
+    {
+      "epoch": 24,
+      "total_loss": 0.0018075764916526775,
+      "fit_loss": 0.001799356599804014,
+      "smooth_loss": 0.00821989867836237,
+      "variance_penalty": 0.0,
+      "d_min": 0.1505710333585739,
+      "d_max": 0.46855628490448
+    },
+    {
+      "epoch": 25,
+      "total_loss": 0.0018067952478304505,
+      "fit_loss": 0.0017985811379427712,
+      "smooth_loss": 0.008214087846378485,
+      "variance_penalty": 0.0,
+      "d_min": 0.1496240794658661,
+      "d_max": 0.469791054725647
+    },
+    {
+      "epoch": 26,
+      "total_loss": 0.0018064976126576464,
+      "fit_loss": 0.0017982891489130755,
+      "smooth_loss": 0.008208499910930792,
+      "variance_penalty": 0.0,
+      "d_min": 0.15060561895370483,
+      "d_max": 0.4685538709163666
+    },
+    {
+      "epoch": 27,
+      "total_loss": 0.0018057385265516739,
+      "fit_loss": 0.001797535049263388,
+      "smooth_loss": 0.008203469837705294,
+      "variance_penalty": 0.0,
+      "d_min": 0.14965738356113434,
+      "d_max": 0.46979227662086487
+    },
+    {
+      "epoch": 28,
+      "total_loss": 0.0018052456240790586,
+      "fit_loss": 0.0017970468907151371,
+      "smooth_loss": 0.008198775971929232,
+      "variance_penalty": 0.0,
+      "d_min": 0.14966922998428345,
+      "d_max": 0.4697926342487335
+    },
+    {
+      "epoch": 29,
+      "total_loss": 0.0018049552648638685,
+      "fit_loss": 0.0017967612366192043,
+      "smooth_loss": 0.00819398028155168,
+      "variance_penalty": 0.0,
+      "d_min": 0.15063025057315826,
+      "d_max": 0.4685506224632263
+    },
+    {
+      "epoch": 30,
+      "total_loss": 0.0018042284646071494,
+      "fit_loss": 0.00179603899596259,
+      "smooth_loss": 0.008189449397226175,
+      "variance_penalty": 0.0,
+      "d_min": 0.15063384175300598,
+      "d_max": 0.46854937076568604
+    },
+    {
+      "epoch": 31,
+      "total_loss": 0.001803711774603774,
+      "fit_loss": 0.001795526419300586,
+      "smooth_loss": 0.008185366789499918,
+      "variance_penalty": 0.0,
+      "d_min": 0.14968803524971008,
+      "d_max": 0.46979305148124695
+    },
+    {
+      "epoch": 32,
+      "total_loss": 0.0018034115200862288,
+      "fit_loss": 0.0017952304139422874,
+      "smooth_loss": 0.008181097296377024,
+      "variance_penalty": 0.0,
+      "d_min": 0.14969179034233093,
+      "d_max": 0.4697931110858917
+    },
+    {
+      "epoch": 33,
+      "total_loss": 0.001802550027302156,
+      "fit_loss": 0.0017943730344995856,
+      "smooth_loss": 0.008177004444102446,
+      "variance_penalty": 0.0,
+      "d_min": 0.15398705005645752,
+      "d_max": 0.4720900058746338
+    },
+    {
+      "epoch": 34,
+      "total_loss": 0.001802274549845606,
+      "fit_loss": 0.0017941012047231197,
+      "smooth_loss": 0.008173291881879171,
+      "variance_penalty": 0.0,
+      "d_min": 0.15064099431037903,
+      "d_max": 0.46854501962661743
+    },
+    {
+      "epoch": 35,
+      "total_loss": 0.0018019367901918788,
+      "fit_loss": 0.0017937674613979955,
+      "smooth_loss": 0.008169352387388548,
+      "variance_penalty": 0.0,
+      "d_min": 0.1496993452310562,
+      "d_max": 0.46979305148124695
+    },
+    {
+      "epoch": 36,
+      "total_loss": 0.0018010579127197464,
+      "fit_loss": 0.0017928923965276529,
+      "smooth_loss": 0.008165519374112288,
+      "variance_penalty": 0.0,
+      "d_min": 0.1539926826953888,
+      "d_max": 0.472090482711792
+    },
+    {
+      "epoch": 37,
+      "total_loss": 0.001800621801521629,
+      "fit_loss": 0.0017924597583866368,
+      "smooth_loss": 0.008162039952973524,
+      "variance_penalty": 0.0,
+      "d_min": 0.15399406850337982,
+      "d_max": 0.4720906913280487
+    },
+    {
+      "epoch": 38,
+      "total_loss": 0.0018001508239346247,
+      "fit_loss": 0.001791992166545242,
+      "smooth_loss": 0.00815863348543644,
+      "variance_penalty": 0.0,
+      "d_min": 0.1539965122938156,
+      "d_max": 0.4720908999443054
+    },
+    {
+      "epoch": 39,
+      "total_loss": 0.0018000715839055677,
+      "fit_loss": 0.0017919166712090373,
+      "smooth_loss": 0.008154943585395813,
+      "variance_penalty": 0.0,
+      "d_min": 0.15064136683940887,
+      "d_max": 0.4685393273830414
+    },
+    {
+      "epoch": 40,
+      "total_loss": 0.0017994975205510855,
+      "fit_loss": 0.001791346459261452,
+      "smooth_loss": 0.008151069904367128,
+      "variance_penalty": 0.0,
+      "d_min": 0.1506398469209671,
+      "d_max": 0.4685375392436981
+    },
+    {
+      "epoch": 41,
+      "total_loss": 0.001798601821064949,
+      "fit_loss": 0.0017904542522349705,
+      "smooth_loss": 0.008147542054454485,
+      "variance_penalty": 0.0,
+      "d_min": 0.1539933681488037,
+      "d_max": 0.472091406583786
+    },
+    {
+      "epoch": 42,
+      "total_loss": 0.0017985169736978908,
+      "fit_loss": 0.001790372742107138,
+      "smooth_loss": 0.008144228408734003,
+      "variance_penalty": 0.0,
+      "d_min": 0.15063844621181488,
+      "d_max": 0.4685348570346832
+    },
+    {
+      "epoch": 43,
+      "total_loss": 0.001797951137026151,
+      "fit_loss": 0.0017898104658039908,
+      "smooth_loss": 0.008140724462767443,
+      "variance_penalty": 0.0,
+      "d_min": 0.14971068501472473,
+      "d_max": 0.46979236602783203
+    },
+    {
+      "epoch": 44,
+      "total_loss": 0.0017972675268538296,
+      "fit_loss": 0.0017891301928708951,
+      "smooth_loss": 0.008137333827714125,
+      "variance_penalty": 0.0,
+      "d_min": 0.15063680708408356,
+      "d_max": 0.4685320556163788
+    },
+    {
+      "epoch": 45,
+      "total_loss": 0.0017969524293827515,
+      "fit_loss": 0.0017888183356262743,
+      "smooth_loss": 0.008134165157874426,
+      "variance_penalty": 0.0,
+      "d_min": 0.14971284568309784,
+      "d_max": 0.4697921574115753
+    },
+    {
+      "epoch": 46,
+      "total_loss": 0.0017964356229640543,
+      "fit_loss": 0.0017883047306289275,
+      "smooth_loss": 0.008130909564594427,
+      "variance_penalty": 0.0,
+      "d_min": 0.14971446990966797,
+      "d_max": 0.46979206800460815
+    },
+    {
+      "epoch": 47,
+      "total_loss": 0.0017959459801204503,
+      "fit_loss": 0.0017878182601028432,
+      "smooth_loss": 0.008127702710529169,
+      "variance_penalty": 0.0,
+      "d_min": 0.15063424408435822,
+      "d_max": 0.4685276448726654
+    },
+    {
+      "epoch": 48,
+      "total_loss": 0.0017954263603314757,
+      "fit_loss": 0.001787301628307129,
+      "smooth_loss": 0.008124682741860548,
+      "variance_penalty": 0.0,
+      "d_min": 0.14971639215946198,
+      "d_max": 0.46979185938835144
+    },
+    {
+      "epoch": 49,
+      "total_loss": 0.001794762909412384,
+      "fit_loss": 0.0017866410974723597,
+      "smooth_loss": 0.008121813337008158,
+      "variance_penalty": 0.0,
+      "d_min": 0.14972007274627686,
+      "d_max": 0.46979185938835144
+    },
+    {
+      "epoch": 50,
+      "total_loss": 0.0017941813760747511,
+      "fit_loss": 0.001786062348401174,
+      "smooth_loss": 0.00811907152334849,
+      "variance_penalty": 0.0,
+      "d_min": 0.15399675071239471,
+      "d_max": 0.4720933139324188
+    },
+    {
+      "epoch": 51,
+      "total_loss": 0.001793766316647331,
+      "fit_loss": 0.0017856498598121107,
+      "smooth_loss": 0.008116491449375948,
+      "variance_penalty": 0.0,
+      "d_min": 0.15399926900863647,
+      "d_max": 0.47209352254867554
+    },
+    {
+      "epoch": 52,
+      "total_loss": 0.0017936859124650557,
+      "fit_loss": 0.0017855721137796838,
+      "smooth_loss": 0.008113790303468704,
+      "variance_penalty": 0.0,
+      "d_min": 0.14972703158855438,
+      "d_max": 0.46979159116744995
+    },
+    {
+      "epoch": 53,
+      "total_loss": 0.0017931519735914965,
+      "fit_loss": 0.001785041104691724,
+      "smooth_loss": 0.008110911274949709,
+      "variance_penalty": 0.0,
+      "d_min": 0.14972756803035736,
+      "d_max": 0.46979138255119324
+    },
+    {
+      "epoch": 54,
+      "total_loss": 0.0017926534443783264,
+      "fit_loss": 0.0017845453597450007,
+      "smooth_loss": 0.008108116996785006,
+      "variance_penalty": 0.0,
+      "d_min": 0.15063056349754333,
+      "d_max": 0.4685180187225342
+    },
+    {
+      "epoch": 55,
+      "total_loss": 0.001792145912380268,
+      "fit_loss": 0.0017840403985852997,
+      "smooth_loss": 0.008105467073619366,
+      "variance_penalty": 0.0,
+      "d_min": 0.1506289541721344,
+      "d_max": 0.4685160219669342
+    },
+    {
+      "epoch": 56,
+      "total_loss": 0.001791458382892112,
+      "fit_loss": 0.0017833553914291163,
+      "smooth_loss": 0.008103024524947008,
+      "variance_penalty": 0.0,
+      "d_min": 0.14973051846027374,
+      "d_max": 0.46979090571403503
+    },
+    {
+      "epoch": 57,
+      "total_loss": 0.0017912172285529475,
+      "fit_loss": 0.0017831166624091566,
+      "smooth_loss": 0.008100541618963083,
+      "variance_penalty": 0.0,
+      "d_min": 0.15062789618968964,
+      "d_max": 0.46851304173469543
+    },
+    {
+      "epoch": 58,
+      "total_loss": 0.0017907037399709225,
+      "fit_loss": 0.0017826055991463363,
+      "smooth_loss": 0.008098138185838858,
+      "variance_penalty": 0.0,
+      "d_min": 0.1497320532798767,
+      "d_max": 0.4697905480861664
+    },
+    {
+      "epoch": 59,
+      "total_loss": 0.0017899160156957805,
+      "fit_loss": 0.0017818201643725236,
+      "smooth_loss": 0.00809583067893982,
+      "variance_penalty": 0.0,
+      "d_min": 0.1539977341890335,
+      "d_max": 0.4720950126647949
+    },
+    {
+      "epoch": 60,
+      "total_loss": 0.0017895289541532595,
+      "fit_loss": 0.0017814352371109028,
+      "smooth_loss": 0.008093700123329958,
+      "variance_penalty": 0.0,
+      "d_min": 0.15399935841560364,
+      "d_max": 0.47209516167640686
+    }
+  ],
+  "train_indices": [
+    0,
+    1,
+    2
+  ],
+  "holdout_indices": [
+    3
+  ],
+  "train_one_step_metrics": [
+    {
+      "patient_id": "patient_067",
+      "week_t0": 92,
+      "week_t1": 109,
+      "mse": 0.002029747935011983,
+      "relative_volume_diff": 0.4764126930256236
+    },
+    {
+      "patient_id": "patient_067",
+      "week_t0": 109,
+      "week_t1": 124,
+      "mse": 0.0028302976861596107,
+      "relative_volume_diff": 3.325
+    },
+    {
+      "patient_id": "patient_067",
+      "week_t0": 124,
+      "week_t1": 136,
+      "mse": 0.0004838768218178302,
+      "relative_volume_diff": 0.36597823673106816
+    }
+  ],
+  "holdout_one_step_metrics": [
+    {
+      "patient_id": "patient_067",
+      "week_t0": 136,
+      "week_t1": 152,
+      "mse": 0.0020932420156896114,
+      "relative_volume_diff": 0.35962241169305725
+    }
+  ],
+  "all_one_step_metrics": [
+    {
+      "patient_id": "patient_067",
+      "week_t0": 92,
+      "week_t1": 109,
+      "mse": 0.002029747935011983,
+      "relative_volume_diff": 0.4764126930256236
+    },
+    {
+      "patient_id": "patient_067",
+      "week_t0": 109,
+      "week_t1": 124,
+      "mse": 0.0028302976861596107,
+      "relative_volume_diff": 3.325
+    },
+    {
+      "patient_id": "patient_067",
+      "week_t0": 124,
+      "week_t1": 136,
+      "mse": 0.0004838768218178302,
+      "relative_volume_diff": 0.36597823673106816
+    },
+    {
+      "patient_id": "patient_067",
+      "week_t0": 136,
+      "week_t1": 152,
+      "mse": 0.0020932420156896114,
+      "relative_volume_diff": 0.35962241169305725
+    }
+  ],
+  "train_metric_summary": {
+    "count": 3,
+    "avg_mse": 0.0017813074809964746,
+    "avg_relative_volume_diff": 1.3891303099188974,
+    "by_patient": {
+      "patient_067": {
+        "count": 3,
+        "avg_mse": 0.0017813074809964746,
+        "avg_relative_volume_diff": 1.3891303099188974
+      }
+    }
+  },
+  "holdout_metric_summary": {
+    "count": 1,
+    "avg_mse": 0.0020932420156896114,
+    "avg_relative_volume_diff": 0.35962241169305725,
+    "by_patient": {
+      "patient_067": {
+        "count": 1,
+        "avg_mse": 0.0020932420156896114,
+        "avg_relative_volume_diff": 0.35962241169305725
+      }
+    }
+  },
+  "all_metric_summary": {
+    "count": 4,
+    "avg_mse": 0.0018592911146697588,
+    "avg_relative_volume_diff": 1.1317533353624374,
+    "by_patient": {
+      "patient_067": {
+        "count": 4,
+        "avg_mse": 0.0018592911146697588,
+        "avg_relative_volume_diff": 1.1317533353624374
+      }
+    }
+  },
+  "baseline_name": "persistence_flair_copy",
+  "baseline_train_one_step_metrics": [
+    {
+      "patient_id": "patient_067",
+      "week_t0": 92,
+      "week_t1": 109,
+      "mse": 0.002375479321926832,
+      "relative_volume_diff": 0.45706770744951636
+    },
+    {
+      "patient_id": "patient_067",
+      "week_t0": 109,
+      "week_t1": 124,
+      "mse": 0.002863446017727256,
+      "relative_volume_diff": 3.15
+    },
+    {
+      "patient_id": "patient_067",
+      "week_t0": 124,
+      "week_t1": 136,
+      "mse": 0.0005411661695688963,
+      "relative_volume_diff": 0.3693093493226738
+    }
+  ],
+  "baseline_holdout_one_step_metrics": [
+    {
+      "patient_id": "patient_067",
+      "week_t0": 136,
+      "week_t1": 152,
+      "mse": 0.0020372101571410894,
+      "relative_volume_diff": 0.37119366626065775
+    }
+  ],
+  "baseline_all_one_step_metrics": [
+    {
+      "patient_id": "patient_067",
+      "week_t0": 92,
+      "week_t1": 109,
+      "mse": 0.002375479321926832,
+      "relative_volume_diff": 0.45706770744951636
+    },
+    {
+      "patient_id": "patient_067",
+      "week_t0": 109,
+      "week_t1": 124,
+      "mse": 0.002863446017727256,
+      "relative_volume_diff": 3.15
+    },
+    {
+      "patient_id": "patient_067",
+      "week_t0": 124,
+      "week_t1": 136,
+      "mse": 0.0005411661695688963,
+      "relative_volume_diff": 0.3693093493226738
+    },
+    {
+      "patient_id": "patient_067",
+      "week_t0": 136,
+      "week_t1": 152,
+      "mse": 0.0020372101571410894,
+      "relative_volume_diff": 0.37119366626065775
+    }
+  ],
+  "baseline_train_metric_summary": {
+    "count": 3,
+    "avg_mse": 0.0019266971697409947,
+    "avg_relative_volume_diff": 1.3254590189240634,
+    "by_patient": {
+      "patient_067": {
+        "count": 3,
+        "avg_mse": 0.0019266971697409947,
+        "avg_relative_volume_diff": 1.3254590189240634
+      }
+    }
+  },
+  "baseline_holdout_metric_summary": {
+    "count": 1,
+    "avg_mse": 0.0020372101571410894,
+    "avg_relative_volume_diff": 0.37119366626065775,
+    "by_patient": {
+      "patient_067": {
+        "count": 1,
+        "avg_mse": 0.0020372101571410894,
+        "avg_relative_volume_diff": 0.37119366626065775
+      }
+    }
+  },
+  "baseline_all_metric_summary": {
+    "count": 4,
+    "avg_mse": 0.0019543254165910184,
+    "avg_relative_volume_diff": 1.086892680758212,
+    "by_patient": {
+      "patient_067": {
+        "count": 4,
+        "avg_mse": 0.0019543254165910184,
+        "avg_relative_volume_diff": 1.086892680758212
+      }
+    }
+  }
+}

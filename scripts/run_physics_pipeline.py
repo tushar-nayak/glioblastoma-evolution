@@ -15,7 +15,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, Subset
 
 
 MODALITIES = ("FLAIR", "T1", "T2", "CT1")
@@ -90,6 +90,28 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=7,
         help="Random seed.",
+    )
+    parser.add_argument(
+        "--holdout-last-pair",
+        action="store_true",
+        help="Hold out the latest adjacent pair for each patient from training and report metrics on it.",
+    )
+    parser.add_argument(
+        "--weight-decay",
+        type=float,
+        default=1e-5,
+        help="Adam weight decay.",
+    )
+    parser.add_argument(
+        "--separate-patient-runs",
+        action="store_true",
+        help="Train one independent model per patient instead of a shared model across all selected patients.",
+    )
+    parser.add_argument(
+        "--model-size",
+        choices=("standard", "tiny"),
+        default="standard",
+        help="Model capacity for the parameter estimator.",
     )
     return parser.parse_args()
 
@@ -235,6 +257,24 @@ class ParameterEstimator3D(nn.Module):
         return diffusion, proliferation
 
 
+class TinyParameterEstimator3D(nn.Module):
+    def __init__(self, in_channels: int = 4) -> None:
+        super().__init__()
+        self.enc = nn.Sequential(
+            nn.Conv3d(in_channels, 8, 3, padding=1),
+            nn.GroupNorm(4, 8),
+            nn.SiLU(),
+        )
+        self.to_params = nn.Conv3d(8, 2, 1)
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        features = self.enc(x)
+        raw_params = self.to_params(features)
+        diffusion = torch.sigmoid(raw_params[:, 0:1]) * 0.5
+        proliferation = torch.sigmoid(raw_params[:, 1:2]) * 0.5
+        return diffusion, proliferation
+
+
 class ReactionDiffusionSolver(nn.Module):
     def __init__(self, device: torch.device) -> None:
         super().__init__()
@@ -277,10 +317,14 @@ class ReactionDiffusionSolver(nn.Module):
 
 
 class GliomaPhysicsModel(nn.Module):
-    def __init__(self, device: torch.device) -> None:
+    def __init__(self, device: torch.device, model_size: str = "standard") -> None:
         super().__init__()
-        self.estimator = ParameterEstimator3D(in_channels=len(MODALITIES))
+        if model_size == "tiny":
+            self.estimator = TinyParameterEstimator3D(in_channels=len(MODALITIES))
+        else:
+            self.estimator = ParameterEstimator3D(in_channels=len(MODALITIES))
         self.solver = ReactionDiffusionSolver(device)
+        self.model_size = model_size
 
     def forward(self, x_t0: torch.Tensor, dt: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         diffusion_map, proliferation_map = self.estimator(x_t0)
@@ -300,15 +344,16 @@ def smoothness_loss_3d(volume: torch.Tensor) -> torch.Tensor:
 
 def train_model(
     model: GliomaPhysicsModel,
-    dataset: MultiPatientGliomaDataset,
+    dataset: Dataset,
     device: torch.device,
     epochs: int,
     batch_size: int,
     lr: float,
+    weight_decay: float,
 ) -> tuple[list[float], list[dict[str, float]]]:
     model.train()
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     mse_crit = nn.MSELoss()
 
     epoch_losses: list[float] = []
@@ -370,13 +415,16 @@ def evaluate_one_step(
     model: GliomaPhysicsModel,
     dataset: MultiPatientGliomaDataset,
     device: torch.device,
+    indices: list[int] | None = None,
 ) -> list[dict[str, float | int | str]]:
     model.eval()
     metrics = []
     mse_crit = nn.MSELoss()
+    indices = indices if indices is not None else list(range(len(dataset.pairs)))
     with torch.no_grad():
-        for pair in dataset.pairs:
-            sample = dataset[dataset.pairs.index(pair)]
+        for pair_index in indices:
+            pair = dataset.pairs[pair_index]
+            sample = dataset[pair_index]
             x_t0 = sample["x_t0"].unsqueeze(0).to(device)
             y_t1 = sample["y_t1"].unsqueeze(0).to(device)
             dt = sample["dt"].unsqueeze(0).to(device)
@@ -397,6 +445,78 @@ def evaluate_one_step(
                 }
             )
     return metrics
+
+
+def evaluate_persistence_baseline(
+    dataset: MultiPatientGliomaDataset,
+    indices: list[int] | None = None,
+) -> list[dict[str, float | int | str]]:
+    metrics = []
+    mse_crit = nn.MSELoss()
+    indices = indices if indices is not None else list(range(len(dataset.pairs)))
+    for pair_index in indices:
+        pair = dataset.pairs[pair_index]
+        sample = dataset[pair_index]
+        pred_t1 = sample["x_t0"][0:1].unsqueeze(0)
+        y_t1 = sample["y_t1"].unsqueeze(0)
+        mse = float(mse_crit(pred_t1, y_t1).item())
+        pred_np = pred_t1[0, 0].detach().cpu().numpy()
+        true_np = y_t1[0, 0].detach().cpu().numpy()
+        pred_volume = float((pred_np > 0.5).sum())
+        true_volume = float((true_np > 0.5).sum())
+        vol_diff = abs(pred_volume - true_volume) / max(true_volume, 1.0)
+        metrics.append(
+            {
+                "patient_id": pair.patient_id,
+                "week_t0": pair.week_t0,
+                "week_t1": pair.week_t1,
+                "mse": mse,
+                "relative_volume_diff": vol_diff,
+            }
+        )
+    return metrics
+
+
+def build_holdout_last_pair_split(dataset: MultiPatientGliomaDataset) -> tuple[list[int], list[int]]:
+    last_pair_index_by_patient: dict[str, int] = {}
+    for idx, pair in enumerate(dataset.pairs):
+        previous_idx = last_pair_index_by_patient.get(pair.patient_id)
+        if previous_idx is None or dataset.pairs[previous_idx].week_t1 < pair.week_t1:
+            last_pair_index_by_patient[pair.patient_id] = idx
+
+    holdout_indices = sorted(last_pair_index_by_patient.values())
+    train_indices = [idx for idx in range(len(dataset.pairs)) if idx not in holdout_indices]
+    if not train_indices:
+        raise RuntimeError("Holdout split consumed all training pairs.")
+    return train_indices, holdout_indices
+
+
+def summarize_metric_rows(rows: list[dict[str, float | int | str]]) -> dict[str, object]:
+    if not rows:
+        return {"count": 0, "avg_mse": None, "avg_relative_volume_diff": None, "by_patient": {}}
+
+    by_patient: dict[str, list[dict[str, float | int | str]]] = {}
+    for row in rows:
+        by_patient.setdefault(str(row["patient_id"]), []).append(row)
+
+    patient_summary: dict[str, dict[str, float | int]] = {}
+    for patient_id, patient_rows in by_patient.items():
+        patient_summary[patient_id] = {
+            "count": len(patient_rows),
+            "avg_mse": float(sum(float(r["mse"]) for r in patient_rows) / len(patient_rows)),
+            "avg_relative_volume_diff": float(
+                sum(float(r["relative_volume_diff"]) for r in patient_rows) / len(patient_rows)
+            ),
+        }
+
+    return {
+        "count": len(rows),
+        "avg_mse": float(sum(float(r["mse"]) for r in rows) / len(rows)),
+        "avg_relative_volume_diff": float(
+            sum(float(r["relative_volume_diff"]) for r in rows) / len(rows)
+        ),
+        "by_patient": patient_summary,
+    }
 
 
 def detect_tumor_center(concentration: torch.Tensor) -> tuple[int, int, int]:
@@ -488,11 +608,13 @@ def serialize_patient_weeks(patient_weeks: dict[str, list[int]]) -> dict[str, li
     return {patient_id: list(weeks) for patient_id, weeks in patient_weeks.items()}
 
 
-def main() -> None:
-    args = parse_args()
-    set_seed(args.seed)
-    repo_root = args.repo_root.resolve()
-    patient_names = args.patients or sorted(path.name for path in repo_root.glob("patient_*") if path.is_dir())
+def run_experiment(
+    *,
+    args: argparse.Namespace,
+    repo_root: Path,
+    patient_names: list[str],
+    run_name: str,
+) -> Path:
     patient_dirs = [repo_root / name for name in patient_names]
     missing = [path for path in patient_dirs if not path.exists()]
     if missing:
@@ -500,7 +622,6 @@ def main() -> None:
 
     device = get_device()
     resize_dim = tuple(args.resize_dim)
-    run_name = args.run_name or datetime.now().strftime("physics_run_%Y%m%d_%H%M%S")
     run_dir = repo_root / "runs" / run_name
     run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -512,21 +633,42 @@ def main() -> None:
     print(f"Training pairs: {len(dataset)}")
     print(f"Patient weeks: {serialize_patient_weeks(dataset.patient_weeks)}")
 
-    model = GliomaPhysicsModel(device).to(device)
+    train_indices = list(range(len(dataset.pairs)))
+    holdout_indices: list[int] = []
+    if args.holdout_last_pair:
+        train_indices, holdout_indices = build_holdout_last_pair_split(dataset)
+        print(f"Train pairs after holdout: {len(train_indices)}")
+        print(f"Holdout pairs: {len(holdout_indices)}")
+
+    train_dataset: Dataset = Subset(dataset, train_indices) if holdout_indices else dataset
+
+    model = GliomaPhysicsModel(device, model_size=args.model_size).to(device)
     losses, epoch_details = train_model(
         model=model,
-        dataset=dataset,
+        dataset=train_dataset,
         device=device,
         epochs=args.epochs,
         batch_size=args.batch_size,
         lr=args.lr,
+        weight_decay=args.weight_decay,
     )
 
-    checkpoint_path = run_dir / "physics_glioma_model_dual_patient.pt"
+    checkpoint_path = run_dir / f"physics_glioma_model_{args.model_size}.pt"
     torch.save(model.state_dict(), checkpoint_path)
     plot_loss_curve(losses, run_dir / "loss_curve.png")
 
-    one_step_metrics = evaluate_one_step(model, dataset, device)
+    train_metrics = evaluate_one_step(model, dataset, device, indices=train_indices)
+    holdout_metrics = evaluate_one_step(model, dataset, device, indices=holdout_indices) if holdout_indices else []
+    all_metrics = evaluate_one_step(model, dataset, device)
+    baseline_train_metrics = evaluate_persistence_baseline(dataset, indices=train_indices)
+    baseline_holdout_metrics = (
+        evaluate_persistence_baseline(dataset, indices=holdout_indices) if holdout_indices else []
+    )
+    baseline_all_metrics = evaluate_persistence_baseline(dataset)
+
+    print(f"Model train summary: {summarize_metric_rows(train_metrics)}")
+    print(f"Model holdout summary: {summarize_metric_rows(holdout_metrics)}")
+    print(f"Baseline holdout summary: {summarize_metric_rows(baseline_holdout_metrics)}")
 
     with torch.no_grad():
         for patient_dir in patient_dirs:
@@ -600,22 +742,76 @@ def main() -> None:
         "patients": patient_names,
         "patient_weeks": serialize_patient_weeks(dataset.patient_weeks),
         "num_pairs": len(dataset),
+        "train_pair_count": len(train_indices),
+        "holdout_pair_count": len(holdout_indices),
         "resize_dim": list(resize_dim),
         "epochs": args.epochs,
         "batch_size": args.batch_size,
         "lr": args.lr,
+        "weight_decay": args.weight_decay,
+        "model_size": args.model_size,
+        "holdout_last_pair": args.holdout_last_pair,
         "forecast_weeks": list(args.forecast_weeks),
         "therapy_weeks": args.therapy_weeks,
         "seed": args.seed,
         "checkpoint": str(checkpoint_path),
         "epoch_details": epoch_details,
-        "one_step_metrics": one_step_metrics,
+        "train_indices": train_indices,
+        "holdout_indices": holdout_indices,
+        "train_one_step_metrics": train_metrics,
+        "holdout_one_step_metrics": holdout_metrics,
+        "all_one_step_metrics": all_metrics,
+        "train_metric_summary": summarize_metric_rows(train_metrics),
+        "holdout_metric_summary": summarize_metric_rows(holdout_metrics),
+        "all_metric_summary": summarize_metric_rows(all_metrics),
+        "baseline_name": "persistence_flair_copy",
+        "baseline_train_one_step_metrics": baseline_train_metrics,
+        "baseline_holdout_one_step_metrics": baseline_holdout_metrics,
+        "baseline_all_one_step_metrics": baseline_all_metrics,
+        "baseline_train_metric_summary": summarize_metric_rows(baseline_train_metrics),
+        "baseline_holdout_metric_summary": summarize_metric_rows(baseline_holdout_metrics),
+        "baseline_all_metric_summary": summarize_metric_rows(baseline_all_metrics),
     }
     metadata_path = run_dir / "run_summary.json"
     metadata_path.write_text(json.dumps(metadata, indent=2))
 
     print(f"Saved checkpoint: {checkpoint_path}")
     print(f"Saved summary: {metadata_path}")
+    return run_dir
+
+
+def main() -> None:
+    args = parse_args()
+    set_seed(args.seed)
+    repo_root = args.repo_root.resolve()
+    patient_names = args.patients or sorted(path.name for path in repo_root.glob("patient_*") if path.is_dir())
+
+    if args.separate_patient_runs:
+        base_run_name = args.run_name or datetime.now().strftime("physics_run_%Y%m%d_%H%M%S")
+        run_dirs = []
+        for patient_name in patient_names:
+            patient_run_name = f"{base_run_name}_{patient_name}"
+            print(f"\n=== Separate run for {patient_name} ===")
+            run_dir = run_experiment(
+                args=args,
+                repo_root=repo_root,
+                patient_names=[patient_name],
+                run_name=patient_run_name,
+            )
+            run_dirs.append(run_dir)
+
+        print("\nCompleted separate patient runs:")
+        for run_dir in run_dirs:
+            print(run_dir)
+        return
+
+    run_name = args.run_name or datetime.now().strftime("physics_run_%Y%m%d_%H%M%S")
+    run_experiment(
+        args=args,
+        repo_root=repo_root,
+        patient_names=patient_names,
+        run_name=run_name,
+    )
 
 
 if __name__ == "__main__":
