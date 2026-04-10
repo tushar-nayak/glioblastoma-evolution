@@ -1,0 +1,7 @@
+*.zip
+*.nii
+*.pth
+.venv/
+runs/
+*.pyc
+*.pt
