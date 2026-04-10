@@ -1,8 +1,16 @@
 # glioblastoma-evolution
 
-This branch, `neural-ode-implementation`, is focused on a cleaned implementation of the recovered **attention U-Net + Neural ODE** approach for longitudinal glioblastoma MRI prediction.
+This branch, `history-conditioned-forecast`, turns the recovered Neural ODE idea into a **prefix-history forecasting** experiment.
 
-The main script for this branch is:
+The goal is:
+
+```text
+predict x_tn from {x_t0, x_t1, ..., x_t(n-1)}
+```
+
+where each `x_t` is a four-modality MRI observation and `tn` is a future scan we want to forecast from all earlier scans.
+
+The main script on this branch is:
 
 - [`scripts/run_neural_ode_pipeline.py`](/Users/tushar/Documents/Repositories/Glioblastoma/scripts/run_neural_ode_pipeline.py)
 
@@ -11,7 +19,7 @@ The patient data used by this branch is:
 - [`patient_007`](/Users/tushar/Documents/Repositories/Glioblastoma/patient_007)
 - [`patient_067`](/Users/tushar/Documents/Repositories/Glioblastoma/patient_067)
 
-The original recovered Neural ODE source that this implementation is based on is primarily:
+The recovered source this branch is based on is:
 
 - [`recovered_files/9b9726a89f5efdfb95654ce40c8925ccbe40cfbb.py`](/Users/tushar/Documents/Repositories/Glioblastoma/recovered_files/9b9726a89f5efdfb95654ce40c8925ccbe40cfbb.py)
 
@@ -22,83 +30,107 @@ The recovered code was a rough notebook/script hybrid. It contained:
 - a 2D attention U-Net
 - a feature-space ODE block using `torchdiffeq.odeint`
 - temporal conditioning with scan weeks
-- ad hoc training and plotting logic mixed into one file
+- ad hoc training and plotting logic in one file
 
-This branch extracts that idea into a clean runnable pipeline that:
+This branch turns that into a runnable pipeline that:
 
-1. loads repo-local patient data instead of hardcoded external paths
-2. builds longitudinal prediction pairs from scan weeks
-3. uses multiple context weeks as input
-4. predicts the future **center slice** for **all four MRI modalities**
-5. supports separate-per-patient runs
-6. supports a simple holdout split
-7. compares the learned model against a persistence baseline
+1. loads repo-local patient data
+2. builds one sample per target week from the full earlier scan history
+3. predicts the future center slice for all four modalities
+4. keeps the latest target week fully out of training when holdout is enabled
+5. compares the learned model against a persistence baseline
 
 ## Model Summary
 
-The Neural ODE pipeline is a **2D slice-based forecasting model**, not a full 3D volumetric model.
+The model is still a 2D slice-based Neural ODE, not a 3D volumetric simulator.
 
 At a high level:
 
-1. For each context week, the script takes a few slices around the center slice.
-2. Those slices from all four modalities are flattened into a multi-channel 2D tensor.
-3. An attention U-Net maps that tensor into latent features.
-4. A Neural ODE evolves those latent features over a time interval `dt`.
-5. A decoder maps the evolved features to the predicted future center slice.
+1. Each historical week is encoded separately with an attention U-Net.
+2. A learned week embedding is added to each encoded week.
+3. The encoded history is aggregated into one latent state.
+4. A Neural ODE evolves that latent state forward by `dt`.
+5. A decoder maps the evolved latent state to the predicted future center slice.
 
-The model predicts:
+The model predicts all four modalities:
 
 - `FLAIR`
 - `T1`
 - `T2`
 - `CT1`
 
-for the target week.
+## Objective And Math
+
+Let each historical week be `x_i`, with `i = 1 ... m`.
+
+Each week contains 4 modalities and a small slice neighborhood, so after flattening the per-week input, the model sees:
+
+```text
+4 modalities x 3 slices = 12 channels per week
+```
+
+The branch encodes each week independently:
+
+```text
+h_i = U(x_i)
+```
+
+where `U` is the attention U-Net backbone.
+
+The week index is embedded and added:
+
+```text
+\tilde{h}_i = h_i + e(w_i)
+```
+
+and the history is aggregated with a masked mean:
+
+```text
+z_0 = (sum_i m_i \tilde{h}_i) / (sum_i m_i)
+```
+
+where `m_i` is a binary mask for valid history entries.
+
+Then the Neural ODE evolves the latent state:
+
+```math
+\frac{dz}{dt} = f_\theta(z, t)
+```
+
+and the decoder produces the forecast:
+
+```text
+\hat{x}_{tn} = D(z(t_n))
+```
+
+The training objective is the usual reconstruction loss on the target future scan:
+
+```text
+loss = MSE(prediction, target) + 0.1 * L1(prediction, target)
+```
 
 ## Data Construction
-
-The current implementation uses:
-
-- 3 context weeks by default
-- center-slice neighborhood offsets `[-1, 0, 1]`
-
-So for each week:
-
-- 4 modalities
-- 3 nearby slices per modality
-
-This gives:
-
-```text
-4 modalities x 3 slices = 12 input channels per context week
-```
-
-With 3 context weeks, the context tensor becomes:
-
-```text
-3 weeks x 12 channels/week = 36 channels
-```
-
-The target is the center slice at the future week with 4 channels:
-
-```text
-[FLAIR, T1, T2, CT1]
-```
-
-## Current Patient Timelines
 
 The usable weeks in this repo are:
 
 - `patient_007`: `55, 64, 75, 89, 105`
 - `patient_067`: `92, 109, 124, 136, 152`
 
-With `context_size=3`, each patient yields only 3 forecasting pairs:
+In prefix-history mode, each later week becomes a target:
 
-- context `[w1, w2, w3] -> target w4`
-- context `[w1, w2, w3] -> target w5`
-- context `[w2, w3, w4] -> target w5`
+- `55 -> 64`
+- `55, 64 -> 75`
+- `55, 64, 75 -> 89`
+- `55, 64, 75, 89 -> 105`
 
-That means this branch is operating in a very small-data regime.
+and similarly for `patient_067`.
+
+With holdout enabled, the latest target week is held out for each patient:
+
+- `patient_007`: `week 105`
+- `patient_067`: `week 152`
+
+That leaves 3 training samples and 1 holdout sample per patient.
 
 ## Setup
 
@@ -120,118 +152,66 @@ This branch requires:
 
 ## Main Run Commands
 
-### Separate per-patient Neural ODE run
+### Prefix-history smoke run
 
-This is the most appropriate mode for the current dataset constraint:
+This is the current branch default and the best match for the new objective:
 
 ```bash
 .venv/bin/python scripts/run_neural_ode_pipeline.py \
-  --epochs 20 \
+  --history-mode prefix \
+  --epochs 10 \
   --lr 3e-4 \
   --holdout-last-pair \
   --separate-patient-runs \
   --model-size tiny \
-  --run-name neural_ode_smoke
+  --run-name history_prefix_smoke
 ```
 
-### Short all-four-modality smoke test
+### Sliding-window fallback
+
+The script still supports the older sliding-window mode if you want to compare against the prefix-history setup:
 
 ```bash
 .venv/bin/python scripts/run_neural_ode_pipeline.py \
-  --epochs 5 \
+  --history-mode sliding \
+  --context-size 3 \
+  --epochs 10 \
   --lr 3e-4 \
   --holdout-last-pair \
   --separate-patient-runs \
   --model-size tiny \
-  --run-name neural_ode_all4_smoke
+  --run-name history_sliding_smoke
 ```
 
-### Strict future-target holdout
+## Holdout Rules
 
-The current `--holdout-last-pair` behavior on this branch is intentionally strict:
+The `--holdout-last-pair` flag now means:
 
-- for each patient, any sample whose `target_week` is the latest week is excluded from training
-- for `patient_067`, that means `week 152` is fully held out from training
-- for `patient_007`, that means `week 105` is fully held out from training
+- hold out the latest target week for each patient
+- do not train on the final future sample
+- evaluate the model on that final prefix-to-future forecast
 
-This is the correct mode if you want to simulate future prediction rather than leak the final timepoint into training.
+That is the correct setup if the goal is genuine future prediction rather than leaking the final scan into training.
 
-### Recommended Neural ODE run on this branch
+## Smoke-Run Results
 
-If the goal is to see the most usable generated images from this Neural ODE approach while preserving strict target holdout, the current best run setting is:
+The current prefix-history smoke run completed successfully, but it still does not beat the persistence baseline on this very small dataset.
 
-```bash
-.venv/bin/python scripts/run_neural_ode_pipeline.py \
-  --epochs 30 \
-  --lr 1e-4 \
-  --context-size 2 \
-  --holdout-last-pair \
-  --separate-patient-runs \
-  --model-size standard \
-  --run-name neural_ode_context2_strict_holdout_30
-```
-
-This gives each patient more trainable pairs than `context_size=3` while still keeping the latest target week fully out of training.
-
-### Strict-holdout results
-
-The best run on this branch so far is the strict-holdout `context_size=2` setup above. The table below reports holdout performance against the persistence baseline.
-
-| Patient | Held-out future week | Train pairs | Holdout pairs | Neural ODE MSE | Baseline MSE | Neural ODE MAE | Baseline MAE |
+| Patient | Held-out future week | Train samples | Holdout samples | Neural ODE MSE | Baseline MSE | Neural ODE MAE | Baseline MAE |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `patient_007` | `105` | 3 | 3 | 0.04119 | 0.00399 | 0.16927 | 0.03153 |
-| `patient_067` | `152` | 3 | 3 | 0.02426 | 0.00752 | 0.14075 | 0.04469 |
+| `patient_007` | `105` | 3 | 1 | 0.04039 | 0.00396 | 0.16903 | 0.03225 |
+| `patient_067` | `152` | 3 | 1 | 0.06532 | 0.00479 | 0.22187 | 0.03243 |
 
-FLAIR volume behavior on holdout was mixed:
+Holdout FLAIR volume behavior was also weaker than the baseline:
 
-- `patient_007`: Neural ODE relative FLAIR volume difference `20.6351`, baseline `0.7743`
-- `patient_067`: Neural ODE relative FLAIR volume difference `0.3794`, baseline `0.7029`
+- `patient_007`: Neural ODE relative FLAIR volume difference `1.0000`, baseline `0.6316`
+- `patient_067`: Neural ODE relative FLAIR volume difference `0.9993`, baseline `0.1648`
 
-For reference, the stricter `context_size=3` run was worse overall:
+The takeaway is simple:
 
-| Patient | Holdout pairs | `context_size=3` Neural ODE MSE | `context_size=3` Baseline MSE | `context_size=3` Neural ODE MAE | `context_size=3` Baseline MAE |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| `patient_007` | 2 | 0.03812 | 0.00392 | 0.17049 | 0.03168 |
-| `patient_067` | 2 | 0.03821 | 0.00518 | 0.17012 | 0.03472 |
-
-So the current conclusion on this branch is precise:
-
-- `context_size=2` is the better Neural ODE configuration for this limited dataset
-- the implementation is functional and produces images
-- the learned model still does not beat the simple persistence baseline under strict future holdout
-
-### Shared run across both patients
-
-```bash
-.venv/bin/python scripts/run_neural_ode_pipeline.py \
-  --epochs 20 \
-  --lr 3e-4 \
-  --holdout-last-pair \
-  --model-size tiny \
-  --run-name neural_ode_shared
-```
-
-## Important Arguments
-
-The most relevant options are:
-
-- `--patients patient_007 patient_067`
-  Restrict to specific patients.
-
-- `--context-size 3`
-  Number of context weeks per sample.
-
-- `--slice-offsets -1 0 1`
-  Relative slice offsets around the center slice.
-
-- `--holdout-last-pair`
-  Removes the latest forecasting pair for each patient from training and reports holdout metrics on it.
-
-- `--separate-patient-runs`
-  Trains one independent Neural ODE model per patient instead of a shared model.
-
-- `--model-size tiny|standard`
-  Chooses a smaller or larger attention U-Net/ODE configuration.
+- the new prefix-history objective is implemented correctly
+- the model trains and produces images
+- the dataset is still too small for the Neural ODE to outperform a persistence baseline
 
 ## Outputs
 
@@ -246,14 +226,8 @@ Typical contents:
 
 Examples from this branch:
 
-- [`runs/neural_ode_smoke_patient_007`](/Users/tushar/Documents/Repositories/Glioblastoma/runs/neural_ode_smoke_patient_007)
-- [`runs/neural_ode_smoke_patient_067`](/Users/tushar/Documents/Repositories/Glioblastoma/runs/neural_ode_smoke_patient_067)
-- [`runs/neural_ode_all4_smoke_patient_007`](/Users/tushar/Documents/Repositories/Glioblastoma/runs/neural_ode_all4_smoke_patient_007)
-- [`runs/neural_ode_all4_smoke_patient_067`](/Users/tushar/Documents/Repositories/Glioblastoma/runs/neural_ode_all4_smoke_patient_067)
-- [`runs/neural_ode_full_strict_holdout_30_patient_007`](/Users/tushar/Documents/Repositories/Glioblastoma/runs/neural_ode_full_strict_holdout_30_patient_007)
-- [`runs/neural_ode_full_strict_holdout_30_patient_067`](/Users/tushar/Documents/Repositories/Glioblastoma/runs/neural_ode_full_strict_holdout_30_patient_067)
-- [`runs/neural_ode_context2_strict_holdout_30_patient_007`](/Users/tushar/Documents/Repositories/Glioblastoma/runs/neural_ode_context2_strict_holdout_30_patient_007)
-- [`runs/neural_ode_context2_strict_holdout_30_patient_067`](/Users/tushar/Documents/Repositories/Glioblastoma/runs/neural_ode_context2_strict_holdout_30_patient_067)
+- [`runs/history_prefix_smoke_patient_007`](/Users/tushar/Documents/Repositories/Glioblastoma/runs/history_prefix_smoke_patient_007)
+- [`runs/history_prefix_smoke_patient_067`](/Users/tushar/Documents/Repositories/Glioblastoma/runs/history_prefix_smoke_patient_067)
 
 The summary JSON includes:
 
@@ -263,56 +237,40 @@ The summary JSON includes:
 - per-modality MSE for all four modalities
 - prediction visualization paths
 
-## Baseline
+## Important Arguments
 
-This branch includes a simple persistence baseline:
+The most relevant options are:
 
-```text
-predict the target slice as the latest context week center slice
-```
+- `--history-mode prefix|sliding`
+  Chooses full prefix history or the older fixed-window setup.
 
-This is important because with small longitudinal datasets, a persistence baseline can be very strong.
+- `--context-size N`
+  Only used when `--history-mode sliding`.
+
+- `--slice-offsets -1 0 1`
+  Relative slice offsets around the center slice.
+
+- `--holdout-last-pair`
+  Holds out the latest target week for each patient.
+
+- `--separate-patient-runs`
+  Trains one independent Neural ODE model per patient instead of a shared model.
+
+- `--model-size tiny|standard`
+  Chooses a smaller or larger attention U-Net/ODE configuration.
 
 ## Current Status
 
-The implementation is working, but the current Neural ODE results are weak.
+This branch is the sequence-to-one forecast experiment.
 
-On the existing smoke runs, the learned Neural ODE underperforms the simple persistence baseline on holdout data. That is true even when evaluating all four modalities explicitly.
-
-The `context_size=2` strict-holdout run improves the generated outputs compared with the stricter `context_size=3` setup because it leaves more training pairs per patient, but it still does not beat the baseline.
-
-This means:
-
-- the recovered approach has now been implemented cleanly
-- the training and inference path is functional
-- but the present dataset is too small for this model family to perform convincingly
-
-## Current Limitations
-
-This branch has several important limitations:
-
-1. It predicts only 2D center slices, not full 3D volumes.
-2. The number of longitudinal examples is extremely small.
-3. Holdout evaluation is based on very few samples.
-4. The baseline is hard to beat because adjacent scans are still similar.
-5. The model has substantially more flexibility than the amount of data can really support.
+It is working end to end, but on the current dataset the learned Neural ODE still underperforms the persistence baseline. That makes this useful as a controlled experiment, not as a convincing predictor.
 
 ## Relationship To The Physics Branch
 
-This branch does not replace the physics-informed model. It is a separate implementation path based on the recovered Neural ODE idea.
+This branch is separate from the physics-informed pipeline.
 
 The physics script is still present in the repo:
 
 - [`scripts/run_physics_pipeline.py`](/Users/tushar/Documents/Repositories/Glioblastoma/scripts/run_physics_pipeline.py)
 
-But this branch is specifically for the Neural ODE implementation and evaluation.
-
-## Recommended Interpretation
-
-Treat this branch as:
-
-- a cleaned reproduction of the recovered Neural ODE experiment
-- a runnable reference implementation
-- a comparison point against the physics-informed approach
-
-Do not treat it as a validated predictive model. With the data available in this repository, it is an exploratory implementation only.
+That branch is about explicit reaction-diffusion dynamics. This branch is about learning a history-conditioned latent forecast from prior scans.
