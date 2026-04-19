@@ -63,6 +63,30 @@ This is the main non-Neural-ODE line of work in the repository history. It is no
 - it did not produce evidence that it beats the simpler persistence baseline
 - it is best treated as a historical comparison point, not the current mainline implementation
 
+## Branch Timeline
+
+The work in this repository evolved in four steps:
+
+1. Initial physics branch
+   - a 3D physics-informed forecasting attempt
+   - runnable on the local patients
+   - useful as a historical baseline, but not a baseline winner
+
+2. Cleaned Neural ODE branch
+   - the recovered Neural ODE idea was made reproducible
+   - strict future-week holdout was added
+   - results were compared against persistence
+
+3. Prefix-history refinement
+   - the sequence-to-one prefix formulation was made explicit
+   - the training/evaluation pipeline stayed functional
+   - the learned model still lagged behind the baseline
+
+4. Slim main branch
+   - the runnable Neural ODE pipeline was kept
+   - the recorded results were preserved
+   - the GitHub Pages summary was added
+
 ### Neural ODE Branch
 
 The cleaned Neural ODE implementation made the history-conditioning explicit and added strict holdout evaluation.
