@@ -57,6 +57,12 @@ What it established:
 - it served as a feasible baseline for physics-guided dynamics
 - it remained exploratory rather than a strong predictive result
 
+This is the main non-Neural-ODE line of work in the repository history. It is not kept as active code in the slim main branch, but its finding still matters:
+
+- the physics-inspired setup was viable
+- it did not produce evidence that it beats the simpler persistence baseline
+- it is best treated as a historical comparison point, not the current mainline implementation
+
 ### Neural ODE Branch
 
 The cleaned Neural ODE implementation made the history-conditioning explicit and added strict holdout evaluation.
@@ -96,6 +102,20 @@ The conclusion is the same:
 - the model generates predictions
 - the persistence baseline is still much stronger on this dataset size
 
+### Other Non-Neural ODE Approaches
+
+There is one other non-Neural-ODE reference point worth keeping in view:
+
+- the persistence baseline
+
+That baseline is intentionally simple:
+
+```text
+predict the next scan as the most recent observed scan
+```
+
+Across the recorded experiments it remains the strongest result on the tiny local cohort. That is why the current repository conclusions are framed as feasibility results rather than model wins.
+
 ## Website
 
 A simple GitHub Pages site lives in [`docs/`](/Users/tushar/Documents/Repositories/Glioblastoma/docs).
@@ -105,6 +125,7 @@ It summarizes:
 - the branch findings
 - the patient-level results
 - the dataset status
+- the non-Neural-ODE reference point
 - the recommended next step
 
 The GitHub Actions workflow for Pages is in:
