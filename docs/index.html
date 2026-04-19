@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Glioblastoma Evolution Findings</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">glioblastoma-evolution</p>
+          <h1>Unified findings from the physics and Neural ODE branches</h1>
+          <p class="lede">
+            A compact summary of what was built, what was measured, and what the
+            two-patient local dataset actually supports.
+          </p>
+        </div>
+        <div class="hero-card">
+          <div class="stat">
+            <span class="stat-value">2</span>
+            <span class="stat-label">local patients used in runs</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">91</span>
+            <span class="stat-label">patients in the public LUMIERE cohort</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">0</span>
+            <span class="stat-label">branches beat the persistence baseline</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>What was unified</h2>
+          <ul>
+            <li>physics-informed 3D forecasting branch</li>
+            <li>cleaned Neural ODE implementation</li>
+            <li>prefix-history forecasting refinement</li>
+            <li>current slim merged experiment</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h2>Core conclusion</h2>
+          <p>
+            The learned models run end to end and produce useful visualizations,
+            but on the current tiny cohort a simple persistence baseline remains
+            much stronger.
+          </p>
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>Neural ODE results</h2>
+        <p class="section-note">
+          Strict future-week holdout from the cleaned branch and the prefix-history smoke run.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Branch</th>
+                <th>Patient</th>
+                <th>Held-out week</th>
+                <th>Model MSE</th>
+                <th>Baseline MSE</th>
+                <th>Model MAE</th>
+                <th>Baseline MAE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Neural ODE strict holdout</td>
+                <td>patient_007</td>
+                <td>105</td>
+                <td>0.04119</td>
+                <td>0.00399</td>
+                <td>0.16927</td>
+                <td>0.03153</td>
+              </tr>
+              <tr>
+                <td>Neural ODE strict holdout</td>
+                <td>patient_067</td>
+                <td>152</td>
+                <td>0.02426</td>
+                <td>0.00752</td>
+                <td>0.14075</td>
+                <td>0.04469</td>
+              </tr>
+              <tr>
+                <td>Prefix-history smoke</td>
+                <td>patient_007</td>
+                <td>105</td>
+                <td>0.04039</td>
+                <td>0.00396</td>
+                <td>0.16903</td>
+                <td>0.03225</td>
+              </tr>
+              <tr>
+                <td>Prefix-history smoke</td>
+                <td>patient_067</td>
+                <td>152</td>
+                <td>0.06532</td>
+                <td>0.00479</td>
+                <td>0.22187</td>
+                <td>0.03243</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="section-note">
+          Best branch result: context size 2 improved the learned model, but the
+          baseline still won on both patients.
+        </p>
+      </section>
+
+      <section class="gallery">
+        <article class="card">
+          <h2>Patient 007</h2>
+          <img src="assets/history_prefix_smoke_patient_007_prediction.png" alt="Prediction and target for patient 007" />
+          <img class="small" src="assets/history_prefix_smoke_patient_007_loss.png" alt="Training loss for patient 007" />
+        </article>
+        <article class="card">
+          <h2>Patient 067</h2>
+          <img src="assets/history_prefix_smoke_patient_067_prediction.png" alt="Prediction and target for patient 067" />
+          <img class="small" src="assets/history_prefix_smoke_patient_067_loss.png" alt="Training loss for patient 067" />
+        </article>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>Dataset status</h2>
+          <ul>
+            <li>local working set: patient_007 and patient_067</li>
+            <li>public source: LUMIERE, 91 GBM patients, 30.33 GB archive</li>
+            <li>full archive download was blocked here by a Figshare WAF challenge</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h2>Recommended next step</h2>
+          <p>
+            Rerun the same pipeline on the full LUMIERE cohort once the archive is
+            available locally. The current evidence is only strong enough for a
+            feasibility study.
+          </p>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

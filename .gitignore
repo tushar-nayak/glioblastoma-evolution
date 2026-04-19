@@ -1,4 +1,8 @@
-*.nii
 *.zip
+*.nii
 *.pth
-
+.venv/
+runs/
+*.pyc
+*.pt
+*.DS_Store
