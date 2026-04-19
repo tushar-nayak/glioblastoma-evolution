@@ -53,6 +53,42 @@
         </article>
       </section>
 
+      <section class="card timeline-card">
+        <h2>Branch Timeline</h2>
+        <ol class="timeline">
+          <li>
+            <span class="timeline-label">Initial physics branch</span>
+            <p>
+              A 3D physics-informed forecasting attempt established a runnable
+              historical baseline, but it remained exploratory and did not beat
+              persistence.
+            </p>
+          </li>
+          <li>
+            <span class="timeline-label">Cleaned Neural ODE branch</span>
+            <p>
+              The recovered Neural ODE was turned into a reproducible pipeline
+              with strict future-week holdout and explicit baseline comparison.
+            </p>
+          </li>
+          <li>
+            <span class="timeline-label">Prefix-history refinement</span>
+            <p>
+              The final refinement made the forecasting objective explicit and
+              showed that prefix history works as a better formulation, though
+              the baseline still wins on the tiny cohort.
+            </p>
+          </li>
+          <li>
+            <span class="timeline-label">Slim main branch</span>
+            <p>
+              The current repository state keeps the runnable Neural ODE
+              pipeline, the recorded results, and the GitHub Pages summary.
+            </p>
+          </li>
+        </ol>
+      </section>
+
       <section class="grid">
         <article class="card">
           <h2>Non-Neural ODE reference</h2>
