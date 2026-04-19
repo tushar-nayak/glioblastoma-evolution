@@ -1,128 +1,145 @@
 # glioblastoma-evolution
 
-This branch is the merged, cleaned prefix-history forecast experiment.
+This repository now consolidates the findings from the recovered branches into one mainline summary:
 
-It keeps the history-conditioned Neural ODE work and strips out the unrelated physics/recovered-artifact branch baggage.
+- the physics-informed 3D forecasting branch
+- the cleaned Neural ODE implementation
+- the prefix-history Neural ODE refinement
+- the current slim merge branch that keeps the runnable pipeline and results
 
-The goal is:
+The practical outcome is consistent across branches:
 
-```text
-predict the next MRI state from all earlier MRI states
-```
+- the forecasting pipelines run end to end on the available local data
+- the learned Neural ODE variants do not beat a simple persistence baseline on the tiny two-patient cohort
+- the prefix-history formulation is the clearest formulation of the forecasting task
+- the full LUMIERE cohort is the right next dataset if the goal is a real generalization study
 
-The main script is:
+## Main Code
+
+The runnable pipeline in this repository is:
 
 - [`scripts/run_neural_ode_pipeline.py`](/Users/tushar/Documents/Repositories/Glioblastoma/scripts/run_neural_ode_pipeline.py)
 
-## Branch Goal
+It supports:
 
-Use the full scan prefix for each patient to predict the next future scan.
-
-For a patient with weeks:
-
-```text
-t0, t1, t2, ..., tn
-```
-
-the model learns samples like:
-
-```text
-{t0} -> t1
-{t0, t1} -> t2
-{t0, t1, t2} -> t3
-...
-{t0, ..., t(n-1)} -> tn
-```
-
-This is a sequence-to-one forecasting setup rather than a fixed sliding window setup.
-
-## Model
-
-The pipeline is a 2D slice-based Neural ODE.
-
-For each historical week:
-
-1. The four MRI modalities are loaded.
-2. A small neighborhood of center slices is flattened into a 2D tensor.
-3. An attention U-Net encodes that week.
-4. A learned week embedding is added.
-5. The encoded history is averaged into one latent state.
-6. A Neural ODE evolves that state forward by the time gap `dt`.
-7. A decoder predicts the future center slice for all four modalities.
-
-The model outputs:
-
-- `FLAIR`
-- `T1`
-- `T2`
-- `CT1`
-
-## Objective
-
-Let `x_i` be the encoded representation for each observed week and `e(w_i)` the learned week embedding.
-
-The branch computes:
-
-```text
-z_0 = mean_i (x_i + e(w_i))
-```
-
-with padding masked out when a history prefix is shorter than the maximum batch length.
-
-Then the latent state is evolved with a Neural ODE:
-
-```math
-\frac{dz}{dt} = f_\theta(z, t)
-```
-
-and the forecast is decoded as:
-
-```text
-\hat{x}_{tn} = D(z(t_n))
-```
-
-Training minimizes:
-
-```text
-MSE(prediction, target) + 0.1 * L1(prediction, target)
-```
+- `--history-mode prefix` for full scan-history forecasting
+- `--history-mode sliding` for the older fixed-window comparison
+- `--holdout-last-pair` for strict future-target evaluation
+- `--separate-patient-runs` for one model per patient
 
 ## Data
 
-The current local dataset includes:
+The local working set currently contains:
 
 - `patient_007`
 - `patient_067`
 
-The branch supports:
+These are the only patients used in the recorded runs in this repo.
 
-- `--history-mode prefix` for full scan-history forecasting
-- `--history-mode sliding` for the older fixed-window comparison
+The public LUMIERE dataset is much larger:
 
-## Holdout
+- 91 GBM patients
+- 638 studies
+- 2487 MRI images
+- 30.33 GB archive
 
-The holdout rule is strict:
+The full archive is the right source for a stronger experiment, but in this session the Figshare download was blocked by a WAF challenge, so the repository still only reflects the small local subset.
 
-- the latest target week for each patient is held out
-- that future week is never used for training
+## Unified Findings
 
-This simulates genuine future prediction.
+### Physics-Informed Branch
 
-## Smoke Results
+The physics-informed branch was a separate 3D forecasting attempt.
 
-The current prefix-history smoke run is functional, but the learned model still loses to the persistence baseline on this tiny dataset.
+What it established:
 
-| Patient | Held-out week | Train samples | Holdout samples | Neural ODE MSE | Baseline MSE | Neural ODE MAE | Baseline MAE |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `patient_007` | `105` | 3 | 1 | 0.04039 | 0.00396 | 0.16903 | 0.03225 |
-| `patient_067` | `152` | 3 | 1 | 0.06532 | 0.00479 | 0.22187 | 0.03243 |
+- the code path was runnable on the two local patients
+- it served as a feasible baseline for physics-guided dynamics
+- it remained exploratory rather than a strong predictive result
 
-## Files Kept In This Branch
+### Neural ODE Branch
 
-Only the files needed for this experiment are kept here:
+The cleaned Neural ODE implementation made the history-conditioning explicit and added strict holdout evaluation.
 
-- [`.gitignore`](/Users/tushar/Documents/Repositories/Glioblastoma/.gitignore)
-- [`README.md`](/Users/tushar/Documents/Repositories/Glioblastoma/README.md)
-- [`requirements.txt`](/Users/tushar/Documents/Repositories/Glioblastoma/requirements.txt)
-- [`scripts/run_neural_ode_pipeline.py`](/Users/tushar/Documents/Repositories/Glioblastoma/scripts/run_neural_ode_pipeline.py)
+The main result:
 
+- `context_size=2` was better than `context_size=3` for the limited data
+- the model still underperformed the persistence baseline
+
+Strict-holdout summary from the branch:
+
+| Patient | Held-out week | Neural ODE MSE | Baseline MSE | Neural ODE MAE | Baseline MAE |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `patient_007` | `105` | `0.04119` | `0.00399` | `0.16927` | `0.03153` |
+| `patient_067` | `152` | `0.02426` | `0.00752` | `0.14075` | `0.04469` |
+
+### Prefix-History Branch
+
+The prefix-history branch is the clearest expression of the forecasting objective:
+
+```text
+t0 -> t1
+t0, t1 -> t2
+t0, t1, t2 -> t3
+```
+
+Smoke-run summary:
+
+| Patient | Held-out week | Neural ODE MSE | Baseline MSE | Neural ODE MAE | Baseline MAE |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `patient_007` | `105` | `0.04039` | `0.00396` | `0.16903` | `0.03225` |
+| `patient_067` | `152` | `0.06532` | `0.00479` | `0.22187` | `0.03243` |
+
+The conclusion is the same:
+
+- the pipeline is functioning
+- the model generates predictions
+- the persistence baseline is still much stronger on this dataset size
+
+## Website
+
+A simple GitHub Pages site lives in [`docs/`](/Users/tushar/Documents/Repositories/Glioblastoma/docs).
+
+It summarizes:
+
+- the branch findings
+- the patient-level results
+- the dataset status
+- the recommended next step
+
+The GitHub Actions workflow for Pages is in:
+
+- [`.github/workflows/pages.yml`](/Users/tushar/Documents/Repositories/Glioblastoma/.github/workflows/pages.yml)
+
+## Reproducibility
+
+Create an environment and install dependencies:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/pip install -r requirements.txt
+```
+
+Run the current pipeline:
+
+```bash
+.venv/bin/python scripts/run_neural_ode_pipeline.py \
+  --history-mode prefix \
+  --holdout-last-pair \
+  --separate-patient-runs \
+  --model-size tiny \
+  --run-name history_prefix_smoke
+```
+
+Outputs are written under [`runs/`](/Users/tushar/Documents/Repositories/Glioblastoma/runs).
+
+## Interpretation
+
+The repo is now best read as a compact record of three things:
+
+1. the recovered forecasting ideas,
+2. the implementation and evaluation path,
+3. the evidence that the current model family is not yet strong enough on the tiny local cohort.
+
+The next meaningful experiment is to rerun the same pipeline on the full LUMIERE cohort once the archive is available locally.
