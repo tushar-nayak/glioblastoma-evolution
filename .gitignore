@@ -7,3 +7,4 @@
 data/
 test_data/
 runs/
+*.nii.gz
