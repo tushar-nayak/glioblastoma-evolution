@@ -4,7 +4,7 @@ This repository contains the results of a large-scale glioblastoma forecasting s
 
 ## Final Results (Full Cohort)
 
-The study is complete. Out of 91 patients, **79 patients** had sufficient longitudinal data (2+ scans) for forecasting. The Neural ODE model successfully learned tumor dynamics, achieving an average cohort-wide improvement of **46.8%** over the persistence baseline.
+Out of 91 patients, **79 patients** had sufficient longitudinal data (2+ scans) for forecasting. The Neural ODE model successfully learned tumor dynamics, achieving an average cohort-wide improvement of **46.8%** over the persistence baseline.
 
 ### **Top 10 Best-Performing Patients**
 
