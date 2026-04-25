@@ -1025,16 +1025,20 @@ def main() -> None:
         run_dirs = []
         for patient_name in patient_names:
             print(f"\n=== Separate Neural ODE run for {patient_name} ===")
-            run_dirs.append(
-                run_experiment(
-                    args=args,
-                    repo_root=repo_root,
-                    patient_names=[patient_name],
-                    run_name=f"{base_run_name}_{patient_name}",
-                    data_dir=args.data_dir,
-                    is_lumiere=args.lumiere,
+            try:
+                run_dirs.append(
+                    run_experiment(
+                        args=args,
+                        repo_root=repo_root,
+                        patient_names=[patient_name],
+                        run_name=f"{base_run_name}_{patient_name}",
+                        data_dir=args.data_dir,
+                        is_lumiere=args.lumiere,
+                    )
                 )
-            )
+            except (RuntimeError, FileNotFoundError) as e:
+                print(f"Skipping {patient_name} due to error: {e}")
+                continue
         print("\nCompleted Neural ODE runs:")
         for run_dir in run_dirs:
             print(run_dir)
