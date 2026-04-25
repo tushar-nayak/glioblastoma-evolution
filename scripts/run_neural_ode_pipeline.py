@@ -250,7 +250,7 @@ class HistoryForecastDataset(Dataset):
             return moving_vol
 
     def _load_week_slices(self, patient_id: str, week: int, reference_week: int | None = None) -> torch.Tensor:
-        cache_key = (patient_id, week)
+        cache_key = (patient_id, week, reference_week)
         cached = self.slice_cache.get(cache_key)
         if cached is not None:
             return cached
@@ -291,9 +291,8 @@ class HistoryForecastDataset(Dataset):
             modality_slices.append(torch.stack(selected_slices))
 
         week_tensor = torch.stack(modality_slices)  # [4, S, H, W]
-        # We only cache if no registration was performed or if we want to cache specific registration
-        if reference_week is None:
-            self.slice_cache[cache_key] = week_tensor
+        # Cache the result to avoid re-registering in future epochs
+        self.slice_cache[cache_key] = week_tensor
         return week_tensor
 
     def __len__(self) -> int:

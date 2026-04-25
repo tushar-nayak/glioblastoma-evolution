@@ -2,6 +2,8 @@
 *.nii
 *.pth
 .venv/
-runs/
 *.pyc
 *.pt
+data/
+test_data/
+runs/
