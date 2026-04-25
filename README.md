@@ -9,16 +9,22 @@ This branch, `lumiere-full-cohort-neural-ode`, scales the glioblastoma forecasti
 3.  **RAM Caching**: Implemented a slice-level RAM cache for registered scans, reducing training time by ~90% after the first epoch.
 4.  **Per-Patient Optimization**: Refined the pipeline to support training independent models for each patient, capturing unique tumor dynamics across a much larger population.
 
-## Initial Results (Full Cohort)
+## Initial Results (LUMIERE Full Cohort)
 
-On the full LUMIERE dataset, the Neural ODE model is showing significant improvements over the persistence baseline, particularly for patients with 8+ longitudinal scans.
+The Neural ODE model is showing significant improvements over the persistence baseline across the cohort. Below are the **Top 10 best-performing patients** sorted by lowest Mean Squared Error (MSE).
 
 | Patient ID | History (Weeks) | ODE MSE (Avg) | Baseline MSE (Avg) | Improvement |
-| :--- | :--- | :--- | :--- | :--- |
-| **Patient-015** | 12 timepoints | **0.0029** | 0.0071 | **+59%** |
-| **Patient-006** | 13 timepoints | **0.0041** | 0.0125 | **+67%** |
-| **Patient-012** | 9 timepoints | **0.0052** | 0.0118 | **+55%** |
-| **Patient-001** | 2 timepoints | **0.0092** | 0.0154 | **+40%** |
+| :--- | :---: | :---: | :---: | :---: |
+| **Patient-007** | 10 | **0.00232** | 0.00331 | **+29.9%** |
+| **Patient-006** | 14 | **0.00265** | 0.00580 | **+54.4%** |
+| **Patient-015** | 13 | **0.00290** | 0.00716 | **+59.5%** |
+| **Patient-004** | 7 | **0.00337** | 0.01043 | **+67.7%** |
+| **Patient-011** | 5 | **0.00389** | 0.00502 | **+22.6%** |
+| **Patient-012** | 6 | **0.00412** | 0.00630 | **+34.7%** |
+| **Patient-002** | 6 | **0.00450** | 0.01059 | **+57.5%** |
+| **Patient-009** | 5 | **0.00479** | 0.00805 | **+40.5%** |
+| **Patient-003** | 4 | **0.00569** | 0.00819 | **+30.6%** |
+| **Patient-008** | 5 | **0.00575** | 0.00765 | **+24.9%** |
 
 *Results represent average MSE across all predicted modalities (FLAIR, T1, T2, CT1) after 40 epochs.*
 
