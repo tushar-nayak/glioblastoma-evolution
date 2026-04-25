@@ -2,7 +2,10 @@
 *.nii
 *.pth
 .venv/
-runs/
 *.pyc
 *.pt
 *.DS_Store
+data/
+test_data/
+runs/
+*.nii.gz
