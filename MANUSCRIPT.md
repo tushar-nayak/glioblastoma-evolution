@@ -46,6 +46,12 @@ Out of 91 patients, 79 provided sufficient longitudinal history for forecasting.
 #### Patient-023 (High Accuracy - 12 Timepoints)
 ![Patient-023 Result](manuscript_assets/patient_023_forecast.png)
 
+#### Patient-015 (Significant Baseline Improvement - 13 Timepoints)
+![Patient-015 Result](manuscript_assets/patient_015_forecast.png)
+
+#### Patient-006 (Extensive History - 14 Timepoints)
+![Patient-006 Result](manuscript_assets/patient_006_forecast.png)
+
 #### Patient-007 (Stable Consistency - 10 Timepoints)
 ![Patient-007 Result](manuscript_assets/patient_007_forecast.png)
 
@@ -58,5 +64,5 @@ This study establishes a new benchmark for glioblastoma forecasting on the LUMIE
 
 ---
 **Status**: Study Complete  
-**Branch**: `lumiere-full-cohort-neural-ode`  
+**Branch**: `main`  
 **Date**: April 25, 2026

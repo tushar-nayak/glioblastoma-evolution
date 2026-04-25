@@ -23,6 +23,22 @@ The study is complete. Out of 91 patients, **79 patients** had sufficient longit
 
 *Results represent average MSE across all predicted modalities (FLAIR, T1, T2, CT1) after 40 epochs.*
 
+## Visual Highlights
+
+Below are representative forecasts showing the model's ability to capture complex multi-modal tumor signatures across different patients.
+
+### **Top Performer: Patient-073**
+*(18 timepoints of history - 57.1% improvement over baseline)*
+![Patient-073 Forecast](manuscript_assets/patient_073_forecast.png)
+
+### **Patient-015**
+*(13 timepoints of history - 59.5% improvement over baseline)*
+![Patient-015 Forecast](manuscript_assets/patient_015_forecast.png)
+
+### **Patient-006**
+*(14 timepoints of history - 54.4% improvement over baseline)*
+![Patient-006 Forecast](manuscript_assets/patient_006_forecast.png)
+
 ## Key Improvements
 
 1.  **Full LUMIERE Support**: Automated handling of the 91-patient cohort's deep directory structure.
