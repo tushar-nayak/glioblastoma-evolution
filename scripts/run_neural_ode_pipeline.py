@@ -28,6 +28,8 @@ def parse_args() -> argparse.Namespace:
         description="Run the history-conditioned attention U-Net Neural ODE approach on the local patient folders."
     )
     parser.add_argument("--repo-root", type=Path, default=repo_root)
+    parser.add_argument("--data-dir", type=Path, default=None, help="Path to the directory containing patient data.")
+    parser.add_argument("--lumiere", action="store_true", help="Whether the dataset is in the LUMIERE structure.")
     parser.add_argument("--patients", nargs="*", default=None)
     parser.add_argument("--epochs", type=int, default=40)
     parser.add_argument("--batch-size", type=int, default=1)
@@ -107,24 +109,27 @@ class HistoryForecastDataset(Dataset):
         history_mode: str = "prefix",
         context_size: int = 3,
         slice_offsets: list[int] | tuple[int, ...] = (-1, 0, 1),
+        is_lumiere: bool = False,
     ) -> None:
         self.patient_dirs = [path.resolve() for path in patient_dirs]
         self.patient_dirs_by_name = {path.name: path.resolve() for path in self.patient_dirs}
         self.history_mode = history_mode
         self.context_size = context_size
         self.slice_offsets = tuple(slice_offsets)
+        self.is_lumiere = is_lumiere
         self.patient_weeks: dict[str, list[int]] = {}
         self.patient_files: dict[str, dict[int, dict[str, Path]]] = {}
         self.slice_cache: dict[tuple[str, int], torch.Tensor] = {}
+        self.registration_cache: dict[tuple[str, int, str], np.ndarray] = {}
         self.samples: list[ForecastSample] = []
 
         for patient_dir in self.patient_dirs:
             weeks = self._discover_weeks(patient_dir)
             self.patient_weeks[patient_dir.name] = weeks
             if len(weeks) < 2:
-                raise RuntimeError(
-                    f"Patient {patient_dir.name} has {len(weeks)} weeks but needs at least 2."
-                )
+                print(f"Skipping patient {patient_dir.name}: only {len(weeks)} weeks found.")
+                continue
+
             if self.history_mode == "prefix":
                 for target_idx in range(1, len(weeks)):
                     history_weeks = weeks[:target_idx]
@@ -139,10 +144,8 @@ class HistoryForecastDataset(Dataset):
                     )
             else:
                 if len(weeks) < self.context_size + 1:
-                    raise RuntimeError(
-                        f"Patient {patient_dir.name} has {len(weeks)} weeks but needs at least "
-                        f"{self.context_size + 1} for sliding history."
-                    )
+                    print(f"Skipping patient {patient_dir.name}: not enough weeks for sliding context.")
+                    continue
                 for start_idx in range(0, len(weeks) - self.context_size):
                     history_weeks = weeks[start_idx : start_idx + self.context_size]
                     for target_week in weeks[start_idx + self.context_size :]:
@@ -159,13 +162,36 @@ class HistoryForecastDataset(Dataset):
             raise RuntimeError("No valid history-conditioned training samples were found.")
         self.pairs = self.samples
 
-
     def _discover_weeks(self, patient_dir: Path) -> list[int]:
         week_to_paths: dict[int, dict[str, Path]] = {}
-        for mod in MODALITIES:
-            for mod_file in sorted(patient_dir.glob(f"{mod}_wk*.nii")):
-                week = extract_week(mod_file.name)
-                week_to_paths.setdefault(week, {})[mod] = mod_file
+        if self.is_lumiere:
+            # LUMIERE structure: Patient-XXX/week-YYY/DeepBraTumIA-segmentation/atlas/skull_strip/
+            # and files are flair_skull_strip.nii.gz, etc.
+            for week_dir in patient_dir.glob("week-*"):
+                try:
+                    week_num = int(week_dir.name.split("-")[1])
+                except (IndexError, ValueError):
+                    continue
+                
+                skull_strip_path = week_dir / "DeepBraTumIA-segmentation" / "atlas" / "skull_strip"
+                if not skull_strip_path.exists():
+                    continue
+                
+                paths = {}
+                mapping = {"FLAIR": "flair", "T1": "t1", "T2": "t2", "CT1": "ct1"}
+                for mod_key, mod_file_prefix in mapping.items():
+                    matches = list(skull_strip_path.glob(f"{mod_file_prefix}_skull_strip.nii*"))
+                    if matches:
+                        paths[mod_key] = matches[0]
+                
+                if all(mod in paths for mod in MODALITIES):
+                    week_to_paths[week_num] = paths
+        else:
+            for mod in MODALITIES:
+                for mod_file in sorted(patient_dir.glob(f"{mod}_wk*.nii")):
+                    week = extract_week(mod_file.name)
+                    week_to_paths.setdefault(week, {})[mod] = mod_file
+        
         valid_week_map = {
             week: paths
             for week, paths in week_to_paths.items()
@@ -175,18 +201,83 @@ class HistoryForecastDataset(Dataset):
         self.patient_files[patient_dir.name] = valid_week_map
         return weeks
 
-    def _load_week_slices(self, patient_id: str, week: int) -> torch.Tensor:
+    def _register_to_reference(self, moving_vol: np.ndarray, fixed_vol: np.ndarray) -> np.ndarray:
+        # Robust Python equivalent of MATLAB imregister(moving, fixed, "affine") using SimpleITK
+        import SimpleITK as sitk
+        
+        fixed_image = sitk.GetImageFromArray(fixed_vol)
+        moving_image = sitk.GetImageFromArray(moving_vol)
+
+        # Basic registration configuration
+        registration_method = sitk.ImageRegistrationMethod()
+
+        # Similarity metric
+        registration_method.SetMetricAsMeanSquares()
+        
+        # Optimizer
+        registration_method.SetOptimizerAsRegularStepGradientDescent(
+            learningRate=1.0, 
+            minStep=1e-4, 
+            numberOfIterations=100
+        )
+        registration_method.SetOptimizerScalesFromPhysicalShift()
+
+        # Initial transform
+        initial_transform = sitk.CenteredTransformInitializer(
+            fixed_image, 
+            moving_image, 
+            sitk.AffineTransform(3), 
+            sitk.CenteredTransformInitializerFilter.GEOMETRY
+        )
+        registration_method.SetInitialTransform(initial_transform, inPlace=False)
+
+        # Interpolator
+        registration_method.SetInterpolator(sitk.sitkLinear)
+
+        try:
+            final_transform = registration_method.Execute(fixed_image, moving_image)
+            resampled = sitk.Resample(
+                moving_image, 
+                fixed_image, 
+                final_transform, 
+                sitk.sitkLinear, 
+                0.0, 
+                moving_image.GetPixelID()
+            )
+            return sitk.GetArrayFromImage(resampled)
+        except Exception as e:
+            print(f"Registration failed, returning original volume: {e}")
+            return moving_vol
+
+    def _load_week_slices(self, patient_id: str, week: int, reference_week: int | None = None) -> torch.Tensor:
         cache_key = (patient_id, week)
         cached = self.slice_cache.get(cache_key)
         if cached is not None:
             return cached
 
-        modality_slices = []
+        # In LUMIERE, we might want to register all weeks to the latest (or target) week's CT1
+        # as seen in the user's MATLAB code.
+        
+        modality_volumes = {}
         for mod in MODALITIES:
             img_path = self.patient_files[patient_id][week][mod]
             volume = nib.load(img_path).get_fdata().astype(np.float32)
-            volume = (volume - np.min(volume)) / (np.max(volume) - np.min(volume) + 1e-8)
+            # Basic normalization
+            volume = (volume - np.min(volume)) / (max(np.max(volume) - np.min(volume), 1e-8))
+            modality_volumes[mod] = volume
 
+        # Registration step if a reference week is provided and it's different from the current week
+        if reference_week is not None and reference_week != week:
+            ref_path = self.patient_files[patient_id][reference_week]["CT1"]
+            ref_vol = nib.load(ref_path).get_fdata().astype(np.float32)
+            ref_vol = (ref_vol - np.min(ref_vol)) / (max(np.max(ref_vol) - np.min(ref_vol), 1e-8))
+            
+            for mod in MODALITIES:
+                modality_volumes[mod] = self._register_to_reference(modality_volumes[mod], ref_vol)
+
+        modality_slices = []
+        for mod in MODALITIES:
+            volume = modality_volumes[mod]
             h, w = volume.shape[:2]
             h = (h // 16) * 16
             w = (w // 16) * 16
@@ -200,7 +291,9 @@ class HistoryForecastDataset(Dataset):
             modality_slices.append(torch.stack(selected_slices))
 
         week_tensor = torch.stack(modality_slices)  # [4, S, H, W]
-        self.slice_cache[cache_key] = week_tensor
+        # We only cache if no registration was performed or if we want to cache specific registration
+        if reference_week is None:
+            self.slice_cache[cache_key] = week_tensor
         return week_tensor
 
     def __len__(self) -> int:
@@ -209,8 +302,10 @@ class HistoryForecastDataset(Dataset):
     def __getitem__(self, idx: int) -> dict[str, object]:
         sample = self.samples[idx]
         history_week_tensors = []
+        
+        # User registers to the latest scan (target_week)
         for week in sample.history_weeks:
-            week_tensor = self._load_week_slices(sample.patient_id, week)
+            week_tensor = self._load_week_slices(sample.patient_id, week, reference_week=sample.target_week)
             history_week_tensors.append(week_tensor.reshape(-1, week_tensor.shape[2], week_tensor.shape[3]))
 
         history_tensor = torch.stack(history_week_tensors, dim=0)
@@ -771,8 +866,11 @@ def run_experiment(
     repo_root: Path,
     patient_names: list[str],
     run_name: str,
+    data_dir: Path | None = None,
+    is_lumiere: bool = False,
 ) -> Path:
-    patient_dirs = [repo_root / name for name in patient_names]
+    search_root = data_dir or repo_root
+    patient_dirs = [search_root / name for name in patient_names]
     missing = [path for path in patient_dirs if not path.exists()]
     if missing:
         raise FileNotFoundError(f"Missing patient directories: {missing}")
@@ -790,6 +888,7 @@ def run_experiment(
         history_mode=args.history_mode,
         context_size=args.context_size,
         slice_offsets=args.slice_offsets,
+        is_lumiere=is_lumiere,
     )
     print(f"History-conditioned samples: {len(dataset)}")
     print(f"Patient weeks: {dataset.patient_weeks}")
@@ -913,7 +1012,14 @@ def main() -> None:
     args = parse_args()
     set_seed(args.seed)
     repo_root = args.repo_root.resolve()
-    patient_names = args.patients or sorted(path.name for path in repo_root.glob("patient_*") if path.is_dir())
+    
+    search_root = args.data_dir.resolve() if args.data_dir else repo_root
+    if args.patients:
+        patient_names = args.patients
+    elif args.lumiere:
+        patient_names = sorted(path.name for path in search_root.glob("Patient-*") if path.is_dir())
+    else:
+        patient_names = sorted(path.name for path in search_root.glob("patient_*") if path.is_dir())
 
     if args.separate_patient_runs:
         base_run_name = args.run_name or datetime.now().strftime("neural_ode_run_%Y%m%d_%H%M%S")
@@ -926,6 +1032,8 @@ def main() -> None:
                     repo_root=repo_root,
                     patient_names=[patient_name],
                     run_name=f"{base_run_name}_{patient_name}",
+                    data_dir=args.data_dir,
+                    is_lumiere=args.lumiere,
                 )
             )
         print("\nCompleted Neural ODE runs:")
@@ -934,7 +1042,14 @@ def main() -> None:
         return
 
     run_name = args.run_name or datetime.now().strftime("neural_ode_run_%Y%m%d_%H%M%S")
-    run_experiment(args=args, repo_root=repo_root, patient_names=patient_names, run_name=run_name)
+    run_experiment(
+        args=args,
+        repo_root=repo_root,
+        patient_names=patient_names,
+        run_name=run_name,
+        data_dir=args.data_dir,
+        is_lumiere=args.lumiere,
+    )
 
 
 if __name__ == "__main__":
