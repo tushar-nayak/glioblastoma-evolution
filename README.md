@@ -1,4 +1,4 @@
-# glioblastoma-evolution: LUMIERE Full Cohort Neural ODE (Study Complete)
+# glioblastoma-evolution
 
 This repository contains the results of a large-scale glioblastoma forecasting study using the full **LUMIERE dataset** (91 patients).
 
