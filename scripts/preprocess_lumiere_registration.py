@@ -144,6 +144,13 @@ def main() -> None:
     else:
         patient_names = sorted(path.name for path in patient_root.glob("Patient-*") if path.is_dir())
 
+    if not patient_names:
+        raise FileNotFoundError(f"No patient directories were found under {patient_root}")
+
+    missing_patients = [name for name in patient_names if not (patient_root / name).is_dir()]
+    if missing_patients:
+        raise FileNotFoundError(f"Missing requested patient directories: {missing_patients}")
+
     manifest: dict[str, object] = {
         "patient_root": str(patient_root),
         "output_dir": str(output_dir),
