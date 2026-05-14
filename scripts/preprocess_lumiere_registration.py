@@ -155,6 +155,8 @@ def main() -> None:
         "patient_root": str(patient_root),
         "output_dir": str(output_dir),
         "patients": patient_names,
+        "generated_job_count": 0,
+        "reused_job_count": 0,
         "jobs": [],
     }
 
@@ -175,11 +177,21 @@ def main() -> None:
             print(f"Target week {target_week:03d}: registering {target_idx} prior weeks")
 
             for moving_week in weeks[:target_idx]:
+                dest_dir = registered_week_dir(output_dir, patient_name, target_week, moving_week)
                 if not args.overwrite and all_outputs_exist(output_dir, patient_name, target_week, moving_week):
                     print(f"  Reusing cache for week {moving_week:03d} -> target {target_week:03d}")
+                    manifest["jobs"].append(
+                        {
+                            "patient_id": patient_name,
+                            "moving_week": moving_week,
+                            "target_week": target_week,
+                            "output_dir": str(dest_dir),
+                            "status": "reused",
+                        }
+                    )
+                    manifest["reused_job_count"] += 1
                     continue
 
-                dest_dir = registered_week_dir(output_dir, patient_name, target_week, moving_week)
                 dest_dir.mkdir(parents=True, exist_ok=True)
                 print(f"  Registering week {moving_week:03d} -> target {target_week:03d}")
 
@@ -200,8 +212,10 @@ def main() -> None:
                         "moving_week": moving_week,
                         "target_week": target_week,
                         "output_dir": str(dest_dir),
+                        "status": "generated",
                     }
                 )
+                manifest["generated_job_count"] += 1
 
     manifest_path = output_dir / "registration_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2))
