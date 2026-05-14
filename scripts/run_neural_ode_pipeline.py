@@ -1252,6 +1252,11 @@ def main() -> None:
     if args.target_slice_offsets is None:
         args.target_slice_offsets = list(args.slice_offsets)
 
+    if args.registered_data_dir is not None:
+        args.registered_data_dir = args.registered_data_dir.resolve()
+        if not args.registered_data_dir.is_dir():
+            raise FileNotFoundError(f"Registered data directory not found: {args.registered_data_dir}")
+
     search_root = args.data_dir.resolve() if args.data_dir else repo_root
     if args.patients:
         patient_names = args.patients
