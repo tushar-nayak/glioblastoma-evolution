@@ -30,6 +30,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--repo-root", type=Path, default=repo_root)
     parser.add_argument("--data-dir", type=Path, default=None, help="Path to the directory containing patient data.")
+    parser.add_argument(
+        "--registered-data-dir",
+        type=Path,
+        default=None,
+        help="Optional path to pre-registered full NIfTI volumes keyed by patient, target week, and moving week.",
+    )
     parser.add_argument("--lumiere", action="store_true", help="Whether the dataset is in the LUMIERE structure.")
     parser.add_argument("--patients", nargs="*", default=None)
     parser.add_argument("--epochs", type=int, default=40, help="Training epochs for cohort runs or patient fine-tuning.")
@@ -186,6 +192,7 @@ class HistoryForecastDataset(Dataset):
         slice_offsets: list[int] | tuple[int, ...] = (-2, -1, 0, 1, 2),
         target_slice_offsets: list[int] | tuple[int, ...] | None = None,
         is_lumiere: bool = False,
+        registered_data_dir: Path | None = None,
     ) -> None:
         self.patient_dirs = [path.resolve() for path in patient_dirs]
         self.patient_dirs_by_name = {path.name: path.resolve() for path in self.patient_dirs}
@@ -198,6 +205,7 @@ class HistoryForecastDataset(Dataset):
         self.history_slice_indices = [self.slice_offset_to_index[offset] for offset in self.slice_offsets]
         self.target_slice_indices = [self.slice_offset_to_index[offset] for offset in self.target_slice_offsets]
         self.is_lumiere = is_lumiere
+        self.registered_data_dir = registered_data_dir.resolve() if registered_data_dir is not None else None
         self.patient_weeks: dict[str, list[int]] = {}
         self.patient_files: dict[str, dict[int, dict[str, Path]]] = {}
         self.slice_cache: dict[tuple[str, int, int | None], torch.Tensor] = {}
@@ -332,12 +340,12 @@ class HistoryForecastDataset(Dataset):
 
         modality_volumes = {}
         for mod in MODALITIES:
-            img_path = self.patient_files[patient_id][week][mod]
+            img_path = self._resolve_modality_path(patient_id, week, mod, reference_week=reference_week)
             volume = nib.load(img_path).get_fdata().astype(np.float32)
             volume = (volume - np.min(volume)) / max(np.max(volume) - np.min(volume), 1e-8)
             modality_volumes[mod] = volume
 
-        if reference_week is not None and reference_week != week:
+        if reference_week is not None and reference_week != week and not self._has_registered_volume_set(patient_id, week, reference_week):
             ref_path = self.patient_files[patient_id][reference_week]["CT1"]
             ref_vol = nib.load(ref_path).get_fdata().astype(np.float32)
             ref_vol = (ref_vol - np.min(ref_vol)) / max(np.max(ref_vol) - np.min(ref_vol), 1e-8)
@@ -362,6 +370,32 @@ class HistoryForecastDataset(Dataset):
         week_tensor = torch.stack(modality_slices)
         self.slice_cache[cache_key] = week_tensor
         return week_tensor
+
+    def _registered_week_dir(self, patient_id: str, moving_week: int, target_week: int) -> Path | None:
+        if self.registered_data_dir is None:
+            return None
+        return (
+            self.registered_data_dir
+            / patient_id
+            / f"target-{target_week:03d}"
+            / f"week-{moving_week:03d}"
+            / "DeepBraTumIA-segmentation"
+            / "atlas"
+            / "skull_strip"
+        )
+
+    def _has_registered_volume_set(self, patient_id: str, moving_week: int, target_week: int) -> bool:
+        registered_dir = self._registered_week_dir(patient_id, moving_week, target_week)
+        if registered_dir is None or not registered_dir.exists():
+            return False
+        return all((registered_dir / f"{mod.lower()}_skull_strip_registered.nii.gz").exists() for mod in MODALITIES)
+
+    def _resolve_modality_path(self, patient_id: str, week: int, mod: str, reference_week: int | None = None) -> Path:
+        if reference_week is not None and reference_week != week and self._has_registered_volume_set(patient_id, week, reference_week):
+            registered_dir = self._registered_week_dir(patient_id, week, reference_week)
+            assert registered_dir is not None
+            return registered_dir / f"{mod.lower()}_skull_strip_registered.nii.gz"
+        return self.patient_files[patient_id][week][mod]
 
     def __len__(self) -> int:
         return len(self.samples)
