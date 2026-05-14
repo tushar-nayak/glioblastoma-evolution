@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Glioblastoma Evolution Findings</title>
+    <title>Glioblastoma Evolution Project</title>
     <meta
       name="description"
-      content="Unified summary of the physics-informed, Neural ODE, and prefix-history glioblastoma forecasting branches."
+      content="GitHub Pages summary of the runnable glioblastoma forecasting scripts and recorded smoke-run outputs."
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -14,34 +14,33 @@
     <header>
       <div class="wrap hero">
         <div class="eyebrow">Glioblastoma MRI Forecasting</div>
-        <h1>Unified branch findings for the recovered forecasting work</h1>
+        <h1>Runnable forecasting scripts and recorded smoke-run outputs</h1>
         <p class="lead">
-          A compact project page covering the physics-informed baseline, the
-          Neural ODE implementation, the prefix-history refinement, and the
-          simple persistence comparison that still wins on the tiny local
-          cohort.
+          This page summarizes the parts of the repository that are currently
+          present and working: the Neural ODE pipeline, the physics-informed
+          pipeline, and the published smoke-run figures stored in the repo.
         </p>
         <div class="actions">
           <a class="button primary" href="https://github.com/tushar-nayak/glioblastoma-evolution">View Repository</a>
-          <a class="button" href="https://github.com/tushar-nayak/glioblastoma-evolution/blob/main/README.md">Read README</a>
-          <a class="button" href="https://github.com/tushar-nayak/glioblastoma-evolution/blob/main/scripts/run_neural_ode_pipeline.py">Open Pipeline</a>
+          <a class="button" href="https://github.com/tushar-nayak/glioblastoma-evolution/blob/main/scripts/run_neural_ode_pipeline.py">Neural ODE Script</a>
+          <a class="button" href="https://github.com/tushar-nayak/glioblastoma-evolution/blob/main/scripts/run_physics_pipeline.py">Physics Script</a>
         </div>
         <div class="metrics">
           <div class="metric">
             <b>2</b>
-            <span>local patients used in runs</span>
+            <span>primary pipeline scripts</span>
           </div>
           <div class="metric">
-            <b>91</b>
-            <span>patients in the public LUMIERE cohort</span>
+            <b>4</b>
+            <span>modalities handled by the loaders</span>
           </div>
           <div class="metric">
-            <b>0</b>
-            <span>learned branches beat persistence</span>
+            <b>4</b>
+            <span>published smoke-run figures</span>
           </div>
           <div class="metric">
-            <b>30.33 GB</b>
-            <span>size of the public LUMIERE archive</span>
+            <b>1</b>
+            <span>GitHub Pages summary for the repo</span>
           </div>
         </div>
       </div>
@@ -50,32 +49,28 @@
     <main>
       <section>
         <div class="wrap">
-          <h2>Project Summary</h2>
+          <h2>What Is Working</h2>
           <p class="section-intro">
-            The repository keeps the runnable Neural ODE pipeline and its recorded
-            outputs, while the branch history documents two other comparison
-            points: the physics-informed 3D attempt and the persistence
-            baseline. The practical conclusion is consistent across all of them:
-            the learned models are functional, but the tiny cohort is too small
-            for them to surpass a simple last-scan predictor.
+            The repository contains two runnable analysis pipelines plus the
+            static site itself. Both scripts compile cleanly, import the
+            declared core dependencies, and expose command-line entry points.
           </p>
           <div class="grid-2">
             <div class="panel">
-              <h3>Main Code</h3>
+              <h3>Neural ODE pipeline</h3>
               <p>
-                The active pipeline is
-                <code>scripts/run_neural_ode_pipeline.py</code>. It supports full
-                prefix history, sliding windows, strict future holdout, and
-                separate-per-patient runs.
+                <code>scripts/run_neural_ode_pipeline.py</code> implements the
+                history-conditioned model, dataset loading, training loop,
+                evaluation helpers, and figure generation for local patient
+                folders.
               </p>
             </div>
             <div class="panel">
-              <h3>Data Context</h3>
+              <h3>Physics-informed pipeline</h3>
               <p>
-                The current local working set only contains
-                <code>patient_007</code> and <code>patient_067</code>. The
-                larger LUMIERE cohort is the right next step for any claim about
-                generalization.
+                <code>scripts/run_physics_pipeline.py</code> provides the 3D
+                physics-informed comparison branch with its own training,
+                evaluation, and reporting path.
               </p>
             </div>
           </div>
@@ -84,119 +79,10 @@
 
       <section>
         <div class="wrap">
-          <h2>Branch Timeline</h2>
+          <h2>Published Artifacts</h2>
           <p class="section-intro">
-            The work evolved from a physics-informed experiment into a cleaned
-            Neural ODE pipeline, then into a prefix-history formulation that made
-            the forecasting objective explicit.
-          </p>
-          <div class="timeline-grid">
-            <div class="panel">
-              <h3>Initial Physics Branch</h3>
-              <p>
-                A runnable 3D physics-informed attempt that acted as a historical
-                comparison point, but did not beat the persistence baseline.
-              </p>
-            </div>
-            <div class="panel">
-              <h3>Cleaned Neural ODE Branch</h3>
-              <p>
-                The recovered Neural ODE idea was turned into a reproducible
-                pipeline with strict future-week holdout and baseline evaluation.
-              </p>
-            </div>
-            <div class="panel">
-              <h3>Prefix-History Refinement</h3>
-              <p>
-                The sequence-to-one prefix formulation clarified the task and
-                produced stable forecasts, but still lagged behind persistence.
-              </p>
-            </div>
-            <div class="panel">
-              <h3>Slim Main Branch</h3>
-              <p>
-                The current branch keeps the runnable pipeline, result artifacts,
-                and a compact GitHub Pages summary.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <div class="wrap">
-          <h2>Final Comparison</h2>
-          <p class="section-intro">
-            The key takeaway is that the model runs end to end, but the last-scan
-            baseline remains the strongest method on this small local cohort.
-          </p>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Method</th>
-                  <th>Patient</th>
-                  <th>Held-out week</th>
-                  <th>MSE</th>
-                  <th>Baseline MSE</th>
-                  <th>MAE</th>
-                  <th>Baseline MAE</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="highlight">
-                  <td>Neural ODE strict holdout</td>
-                  <td>patient_007</td>
-                  <td>105</td>
-                  <td>0.04119</td>
-                  <td>0.00399</td>
-                  <td>0.16927</td>
-                  <td>0.03153</td>
-                </tr>
-                <tr class="highlight">
-                  <td>Neural ODE strict holdout</td>
-                  <td>patient_067</td>
-                  <td>152</td>
-                  <td>0.02426</td>
-                  <td>0.00752</td>
-                  <td>0.14075</td>
-                  <td>0.04469</td>
-                </tr>
-                <tr class="best">
-                  <td>Persistence baseline</td>
-                  <td>patient_007</td>
-                  <td>105</td>
-                  <td>0.00399</td>
-                  <td>0.00399</td>
-                  <td>0.03153</td>
-                  <td>0.03153</td>
-                </tr>
-                <tr class="best">
-                  <td>Persistence baseline</td>
-                  <td>patient_067</td>
-                  <td>152</td>
-                  <td>0.00752</td>
-                  <td>0.00752</td>
-                  <td>0.04469</td>
-                  <td>0.04469</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="caption">
-            The learned model improves the forecasting setup, but not the final
-            metric outcome on this cohort.
-          </p>
-        </div>
-      </section>
-
-      <section>
-        <div class="wrap">
-          <h2>Results Gallery</h2>
-          <p class="section-intro">
-            The existing smoke-run outputs are kept in the repository and shown
-            here directly so the page reflects actual experiments rather than only
-            summary text.
+            The repo includes rendered outputs from the smoke runs so the page
+            points to real generated figures rather than placeholders.
           </p>
           <div class="grid-2">
             <div class="panel image-frame">
@@ -205,7 +91,7 @@
                 src="assets/history_prefix_smoke_patient_007_prediction.png"
                 alt="Prediction and target for patient 007"
               />
-              <div class="caption">Prediction versus target for week 105.</div>
+              <div class="caption">Prediction versus target for the smoke run.</div>
               <img
                 src="assets/history_prefix_smoke_patient_007_loss.png"
                 alt="Training loss for patient 007"
@@ -217,7 +103,7 @@
                 src="assets/history_prefix_smoke_patient_067_prediction.png"
                 alt="Prediction and target for patient 067"
               />
-              <div class="caption">Prediction versus target for week 152.</div>
+              <div class="caption">Prediction versus target for the smoke run.</div>
               <img
                 src="assets/history_prefix_smoke_patient_067_loss.png"
                 alt="Training loss for patient 067"
@@ -229,29 +115,25 @@
 
       <section>
         <div class="wrap">
-          <h2>Interpretation</h2>
+          <h2>Repository Notes</h2>
           <p class="section-intro">
-            The physics-informed branch was a useful comparison point, but the
-            practical non-Neural-ODE baseline is the persistence predictor. That
-            simple approach still beats the learned methods here, which is why
-            the repo is best read as a feasibility record rather than a final
-            predictive claim.
+            The documentation and manuscript files describe the intended
+            research direction. The GitHub Pages summary stays conservative and
+            only reflects the working code and the checked-in figures.
           </p>
           <div class="grid-2">
             <div class="panel">
-              <h3>What the learned models show</h3>
+              <h3>Current scope</h3>
               <p>
-                They demonstrate that the history-conditioned forecasting
-                pipeline is implementable and that the models can produce
-                plausible outputs for all four modalities.
+                Local data loading, model definition, training, evaluation, and
+                figure export are implemented for the included pipelines.
               </p>
             </div>
             <div class="panel">
-              <h3>What the baseline shows</h3>
+              <h3>Site focus</h3>
               <p>
-                The latest observed scan is already a very strong predictor on
-                this small cohort, so any new model has to clear a high bar just
-                to look useful.
+                The site surfaces the scripts and assets that are already in the
+                repository and avoids claims about larger cohort performance.
               </p>
             </div>
           </div>
@@ -260,8 +142,8 @@
 
       <footer class="footer">
         <div class="wrap">
-          Next step: rerun the same pipeline on the full LUMIERE cohort once the
-          archive is available locally.
+          Updated GitHub Pages summary for the currently working repository
+          contents.
         </div>
       </footer>
     </main>
