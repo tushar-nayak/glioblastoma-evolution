@@ -839,6 +839,8 @@ def plot_prediction(
     prediction = prediction[0].detach().cpu()
     baseline_prediction = baseline_prediction[0].detach().cpu()
 
+    if latest_history.dim() == 4:
+        latest_history = latest_history.reshape(-1, latest_history.shape[2], latest_history.shape[3])
     latest_history = reshape_stacked_modalities(latest_history, target_slice_count)
     target = reshape_stacked_modalities(target, target_slice_count)
     prediction = reshape_stacked_modalities(prediction, target_slice_count)
@@ -1070,6 +1072,7 @@ def run_experiment(
         slice_offsets=args.slice_offsets,
         target_slice_offsets=args.target_slice_offsets,
         is_lumiere=is_lumiere,
+        registered_data_dir=args.registered_data_dir,
     )
     print(f"History-conditioned samples: {len(dataset)}")
     print(f"Patient weeks: {dataset.patient_weeks}")
@@ -1181,6 +1184,8 @@ def run_experiment(
         "repo_root": str(repo_root),
         "device": str(device),
         "patients": patient_names,
+        "data_dir": str(search_root),
+        "registered_data_dir": str(args.registered_data_dir.resolve()) if args.registered_data_dir is not None else None,
         "patient_weeks": dataset.patient_weeks,
         "history_mode": args.history_mode,
         "context_size": args.context_size,
