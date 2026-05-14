@@ -1027,17 +1027,29 @@ def build_model(
 
 
 def resolve_patient_dirs(search_root: Path, patient_names: list[str]) -> list[Path]:
-    patient_dirs = [search_root / name for name in patient_names]
-    if all(path.exists() for path in patient_dirs):
-        return patient_dirs
+    candidate_roots = [search_root.resolve(), (search_root / "Imaging").resolve()]
+    resolved_dirs: list[Path] = []
+    missing_names: list[str] = []
 
-    nested_imaging_root = search_root / "Imaging"
-    nested_patient_dirs = [nested_imaging_root / name for name in patient_names]
-    if all(path.exists() for path in nested_patient_dirs):
-        return nested_patient_dirs
+    for patient_name in patient_names:
+        resolved = None
+        for root in candidate_roots:
+            candidate = root / patient_name
+            if candidate.is_dir():
+                resolved = candidate
+                break
+        if resolved is None:
+            missing_names.append(patient_name)
+        else:
+            resolved_dirs.append(resolved)
 
-    missing = [path for path in patient_dirs if not path.exists()]
-    raise FileNotFoundError(f"Missing patient directories: {missing}")
+    if missing_names:
+        searched_roots = ", ".join(str(root) for root in candidate_roots)
+        raise FileNotFoundError(
+            f"Missing patient directories for {missing_names}. Searched under: {searched_roots}"
+        )
+
+    return resolved_dirs
 
 
 def run_experiment(
