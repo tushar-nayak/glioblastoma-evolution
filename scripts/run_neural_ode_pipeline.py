@@ -1098,7 +1098,11 @@ def run_experiment(
     train_skipped = False
     if not train_indices:
         if initial_state_dict is None:
-            raise RuntimeError("Holdout split consumed all history-conditioned training samples.")
+            raise RuntimeError(
+                "Holdout split consumed all history-conditioned training samples. "
+                "Add more longitudinal weeks for the selected patients or rerun with "
+                "--no-holdout-last-pair."
+            )
         print("No train samples left after holdout; using pretrained weights without fine-tuning.")
         losses: list[float] = []
         epoch_details: list[dict[str, float]] = []
@@ -1245,6 +1249,9 @@ def main() -> None:
     else:
         patient_names = sorted(path.name for path in search_root.glob("patient_*") if path.is_dir())
 
+    if not patient_names:
+        raise FileNotFoundError(f"No patient directories were found under {search_root}")
+
     if args.separate_patient_runs:
         base_run_name = args.run_name or datetime.now().strftime("neural_ode_run_%Y%m%d_%H%M%S")
         initial_state_dict = None
@@ -1288,6 +1295,8 @@ def main() -> None:
         print("\nCompleted Neural ODE runs:")
         for run_dir in run_dirs:
             print(run_dir)
+        if not run_dirs:
+            raise RuntimeError("No separate patient runs completed successfully.")
         return
 
     run_name = args.run_name or datetime.now().strftime("neural_ode_run_%Y%m%d_%H%M%S")
