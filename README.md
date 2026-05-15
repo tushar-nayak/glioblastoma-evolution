@@ -79,4 +79,4 @@ GitHub Actions runs the same Python validation workflow on pushes and pull reque
 
 ## Publication Status
 
-This is not yet a finished clinical manuscript package. The code now has reproducible aggregation, tests, CI, and tracked result tables, but a publication submission still needs a locked train/evaluation protocol, independent holdout reporting for all cohort runs, data-access instructions, ethics/data-use language, and manuscript figures generated from the final frozen outputs.
+This is not yet a finished clinical manuscript package. The code now has reproducible aggregation, tests, CI, and tracked result tables, but a publication submission still needs a locked final run using [PUBLICATION_PROTOCOL.md](PUBLICATION_PROTOCOL.md), independent holdout reporting for all cohort runs, data-access instructions, ethics/data-use language, and manuscript figures generated from the final frozen outputs.
