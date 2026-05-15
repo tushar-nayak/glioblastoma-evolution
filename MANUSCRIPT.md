@@ -1,68 +1,94 @@
-# Longitudinal Forecasting of Glioblastoma Evolution using History-Conditioned Neural ODEs on the LUMIERE Cohort (Final Report)
+# Longitudinal Forecasting of Glioblastoma Evolution using History-Conditioned Neural ODEs on LUMIERE-Style MRI
 
 ## Abstract
-Forecasting the spatial evolution of Glioblastoma Multiforme (GBM) is critical for personalized treatment planning. We present a deep learning framework that integrates 2D Attention U-Nets with Neural Ordinary Differential Equations (Neural ODEs) to model tumor dynamics from longitudinal multi-modal MRI. Using the full LUMIERE cohort (91 patients, ~638 studies), we demonstrate a cohort-wide average improvement of **46.8%** over persistence baselines, with individual patient improvements reaching as high as **67.7%**.
+Forecasting the spatial evolution of Glioblastoma Multiforme (GBM) is relevant for personalized treatment planning, response monitoring, and trial design. This repository implements a history-conditioned deep learning framework that integrates a 2D Attention U-Net encoder with Neural Ordinary Differential Equation (Neural ODE) latent dynamics for longitudinal multi-modal MRI forecasting.
+
+The current reproducibility package includes preprocessing, training, evaluation, synthetic smoke testing, CI validation, and aggregate tables generated from local `lumiere_full_v1_*` run summaries. Across 81 patient-level local runs, the aggregated all-sample summaries show a mean model MSE of **0.00828323** versus a persistence-baseline MSE of **0.00876673**, corresponding to **+6.7%** mean relative improvement. These results should be treated as a reproducibility checkpoint, not a locked clinical benchmark, because the older full-run summaries primarily report all-sample rather than independent holdout metrics.
 
 ---
 
 ## 1. Introduction
-The objective of this work was to evaluate whether history-conditioned Neural ODEs could learn the "velocity" of tumor growth across a large-scale longitudinal dataset. By moving from isolated small cohorts to the full LUMIERE dataset, we hypothesized that the model would capture more generalized features of GBM progression.
+The objective of this work is to evaluate whether history-conditioned Neural ODEs can model the temporal evolution of GBM imaging features from irregularly spaced longitudinal MRI. A persistence predictor, which copies the latest available scan into the future, is a strong baseline for slow-changing tumor appearances and must be reported alongside any learned model.
 
 ---
 
 ## 2. Methods
-We implemented a pipeline featuring:
-- **Clinical-Grade Registration**: SimpleITK Affine alignment of all historical snapshots to the future target scan.
-- **Attention-Gated Latent Dynamics**: A 2D Attention U-Net architecture coupled with the `torchdiffeq` ODE solver.
-- **Per-Patient Training**: Capturing the specific growth rate and infiltration pattern of each patient's tumor.
+The repository implements:
+
+- **LUMIERE-style ingestion**: Patient/week discovery for FLAIR, T1, T2, and CT1 skull-stripped NIfTI volumes.
+- **Registration preprocessing**: SimpleITK affine registration of historical weeks to future target weeks, with a manifest that records generated and reused jobs.
+- **History-conditioned forecasting**: Prefix-history or sliding-window samples that condition an Attention U-Net encoder and Neural ODE latent dynamics.
+- **Persistence baseline**: A latest-history target-slice baseline evaluated with the same MSE, MAE, modality-level, and FLAIR-volume metrics.
+- **Metric aggregation**: `scripts/summarize_run_metrics.py` creates CSV, JSON, and Markdown tables from run summaries and records which metric split was used.
 
 ---
 
-## 3. Results
+## 3. Reproducibility Checkpoint Results
 
 ### 3.1 Quantitative Summary
-Out of 91 patients, 79 provided sufficient longitudinal history for forecasting. The model consistently outperformed the baseline, especially in patients with long (8+) scan histories.
+The tracked aggregate table in `results/lumiere_full_v1_metrics.md` summarizes 81 local patient-level runs. Because these runs were produced before the current holdout-aware summary schema was fully standardized, the table uses the best available split per run and records that choice in `metric_split`.
 
-**Table 1: Final Top 10 Best-Performing Patients**
+**Table 1: Top 10 Runs by Relative Improvement**
 
-| Patient ID | History (Weeks) | Neural ODE MSE | Baseline MSE | % Improvement |
-| :--- | :---: | :---: | :---: | :---: |
-| **Patient-073** | 18 | **0.00193** | 0.00449 | **+57.1%** |
-| **Patient-023** | 12 | **0.00217** | 0.00539 | **+59.8%** |
-| **Patient-024** | 8 | **0.00220** | 0.00542 | **+59.5%** |
-| **Patient-007** | 10 | **0.00232** | 0.00331 | **+29.9%** |
-| **Patient-035** | 6 | **0.00236** | 0.00246 | **+4.0%** |
-| **Patient-006** | 14 | **0.00265** | 0.00580 | **+54.4%** |
-| **Patient-043** | 12 | **0.00276** | 0.00635 | **+56.6%** |
-| **Patient-055** | 8 | **0.00293** | 0.00654 | **+55.1%** |
-| **Patient-015** | 13 | **0.00295** | 0.00716 | **+58.7%** |
-| **Patient-064** | 6 | **0.00304** | 0.00763 | **+60.1%** |
+| Patient ID | Split | Samples | Neural ODE MSE | Baseline MSE | Improvement |
+| :--- | :---: | ---: | ---: | ---: | ---: |
+| Patient-028 | all | 7 | 0.00386073 | 0.0123518 | +68.7% |
+| Patient-004 | all | 6 | 0.00336998 | 0.0104322 | +67.7% |
+| Patient-066 | all | 8 | 0.00379933 | 0.0114351 | +66.8% |
+| Patient-077 | all | 8 | 0.00324765 | 0.00911861 | +64.4% |
+| Patient-031 | all | 17 | 0.00351799 | 0.00956643 | +63.2% |
+| Patient-029 | all | 12 | 0.00369017 | 0.00964532 | +61.7% |
+| Patient-051 | all | 8 | 0.00324879 | 0.00830486 | +60.9% |
+| Patient-061 | all | 6 | 0.00331688 | 0.00832878 | +60.2% |
+| Patient-064 | all | 5 | 0.00304315 | 0.00762993 | +60.1% |
+| Patient-089 | all | 4 | 0.00376154 | 0.00939794 | +60.0% |
+
+Aggregate across the 81 tracked rows:
+
+- Mean model MSE: 0.00828323
+- Mean baseline MSE: 0.00876673
+- Mean relative improvement: +6.7%
+- Positive-improvement patients: 65
+- Nonpositive-improvement patients: 16
 
 ### 3.2 Representative Visualizations
 
-#### Patient-073 (Top Performer - 18 Timepoints)
+#### Patient-073
 ![Patient-073 Result](manuscript_assets/patient_073_forecast.png)
 
-#### Patient-023 (High Accuracy - 12 Timepoints)
+#### Patient-023
 ![Patient-023 Result](manuscript_assets/patient_023_forecast.png)
 
-#### Patient-015 (Significant Baseline Improvement - 13 Timepoints)
+#### Patient-015
 ![Patient-015 Result](manuscript_assets/patient_015_forecast.png)
 
-#### Patient-006 (Extensive History - 14 Timepoints)
+#### Patient-006
 ![Patient-006 Result](manuscript_assets/patient_006_forecast.png)
 
-#### Patient-007 (Stable Consistency - 10 Timepoints)
+#### Patient-007
 ![Patient-007 Result](manuscript_assets/patient_007_forecast.png)
 
 ---
 
-## 4. Discussion and Conclusion
-The completion of the 91-patient run confirms that Neural ODEs are robust to the irregular temporal spacing inherent in real-world clinical data. The strong correlation between history length and forecast accuracy suggest that the model is successfully performing "long-term calibration" of tumor dynamics. 
+## 4. Discussion
+The current aggregate results suggest that the learned Neural ODE model can outperform persistence for many patient-level runs, but the average improvement is modest and mixed across patients. The persistence baseline remains difficult to beat and should remain the primary comparator in any publication draft.
 
-This study establishes a new benchmark for glioblastoma forecasting on the LUMIERE cohort, demonstrating that deep temporal modeling significantly exceeds the accuracy of static persistence assumptions.
+The strongest next step is to rerun the full cohort with the current code so every patient has the same independent holdout protocol, current metadata schema, and tracked aggregation outputs. Only that frozen run should be used for clinical claims.
+
+## 5. Publication Checklist
+
+- Lock the final train/validation/test protocol before rerunning full-cohort experiments.
+- Report independent holdout metrics for every eligible patient.
+- Include the persistence baseline in all primary tables.
+- Commit final aggregate CSV/JSON/Markdown tables generated from the frozen run summaries.
+- Regenerate all manuscript figures from the final frozen run outputs.
+- Add dataset access, data-use, and ethics language appropriate to LUMIERE.
+- Record software versions, hardware, random seeds, and run commands.
+
+## 6. Conclusion
+The repository is now a reproducible research scaffold for GBM forecasting experiments with history-conditioned Neural ODEs. It is not yet a final clinical benchmark, but it has the core components required to produce one: deterministic smoke data, preprocessing manifests, run summaries, aggregation scripts, tests, CI, and explicit baseline reporting.
 
 ---
-**Status**: Study Complete  
+**Status**: Reproducibility checkpoint  
 **Branch**: `main`  
-**Date**: April 25, 2026
+**Updated**: May 15, 2026
