@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import argparse
 import copy
+import csv
 import json
 import random
 import re
+import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -798,6 +800,43 @@ def summarize_metric_rows(rows: list[dict[str, float | int | str]]) -> dict[str,
     }
 
 
+def flatten_metric_row(row: dict[str, object]) -> dict[str, object]:
+    flat = {
+        "patient_id": row["patient_id"],
+        "history_weeks": ",".join(str(week) for week in row["history_weeks"]),
+        "target_week": row["target_week"],
+        "mse": row["mse"],
+        "mae": row["mae"],
+        "relative_flair_volume_diff": row["relative_flair_volume_diff"],
+    }
+    per_modality_mse = row.get("per_modality_mse") or {}
+    per_modality_mae = row.get("per_modality_mae") or {}
+    for modality in MODALITIES:
+        flat[f"{modality.lower()}_mse"] = per_modality_mse.get(modality)
+        flat[f"{modality.lower()}_mae"] = per_modality_mae.get(modality)
+    return flat
+
+
+def write_metric_rows(rows: list[dict[str, object]], output_path: Path) -> None:
+    fieldnames = [
+        "patient_id",
+        "history_weeks",
+        "target_week",
+        "mse",
+        "mae",
+        "relative_flair_volume_diff",
+    ]
+    for modality in MODALITIES:
+        fieldnames.extend([f"{modality.lower()}_mse", f"{modality.lower()}_mae"])
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(flatten_metric_row(row))
+
+
 def plot_loss_curve(losses: list[float], output_path: Path) -> None:
     fig, ax = plt.subplots(figsize=(8, 4))
     if losses:
@@ -1144,6 +1183,20 @@ def run_experiment(
         evaluate_persistence_baseline(dataset, indices=holdout_indices) if holdout_indices else []
     )
     baseline_all_metrics = evaluate_persistence_baseline(dataset)
+    metric_csv_paths = {
+        "train_history_metrics": run_dir / "train_history_metrics.csv",
+        "holdout_history_metrics": run_dir / "holdout_history_metrics.csv",
+        "all_history_metrics": run_dir / "all_history_metrics.csv",
+        "baseline_train_history_metrics": run_dir / "baseline_train_history_metrics.csv",
+        "baseline_holdout_history_metrics": run_dir / "baseline_holdout_history_metrics.csv",
+        "baseline_all_history_metrics": run_dir / "baseline_all_history_metrics.csv",
+    }
+    write_metric_rows(train_metrics, metric_csv_paths["train_history_metrics"])
+    write_metric_rows(holdout_metrics, metric_csv_paths["holdout_history_metrics"])
+    write_metric_rows(all_metrics, metric_csv_paths["all_history_metrics"])
+    write_metric_rows(baseline_train_metrics, metric_csv_paths["baseline_train_history_metrics"])
+    write_metric_rows(baseline_holdout_metrics, metric_csv_paths["baseline_holdout_history_metrics"])
+    write_metric_rows(baseline_all_metrics, metric_csv_paths["baseline_all_history_metrics"])
 
     print(f"Model holdout summary: {summarize_metric_rows(holdout_metrics)}")
     print(f"Baseline holdout summary: {summarize_metric_rows(baseline_holdout_metrics)}")
@@ -1199,6 +1252,9 @@ def run_experiment(
         "pretrained_from": pretrained_from,
         "repo_root": str(repo_root),
         "device": str(device),
+        "python_version": sys.version,
+        "torch_version": torch.__version__,
+        "numpy_version": np.__version__,
         "patients": patient_names,
         "data_dir": str(search_root),
         "registered_data_dir": str(args.registered_data_dir.resolve()) if args.registered_data_dir is not None else None,
@@ -1235,6 +1291,7 @@ def run_experiment(
         "baseline_train_metric_summary": summarize_metric_rows(baseline_train_metrics),
         "baseline_holdout_metric_summary": summarize_metric_rows(baseline_holdout_metrics),
         "baseline_all_metric_summary": summarize_metric_rows(baseline_all_metrics),
+        "metric_csvs": {key: str(path) for key, path in metric_csv_paths.items()},
         "prediction_visualizations": summary_predictions,
     }
     summary_path = run_dir / "run_summary.json"
