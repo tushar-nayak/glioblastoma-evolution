@@ -5,10 +5,21 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.run_neural_ode_pipeline import flatten_metric_row, write_metric_rows
+from scripts.run_neural_ode_pipeline import flatten_metric_row, get_device, write_metric_rows
 
 
 class RunNeuralODEPipelineMetricsTest(unittest.TestCase):
+    def test_get_device_accepts_explicit_cpu(self) -> None:
+        self.assertEqual(str(get_device("cpu")), "cpu")
+
+    def test_get_device_rejects_unavailable_cuda(self) -> None:
+        try:
+            device = get_device("cuda")
+        except RuntimeError as error:
+            self.assertIn("CUDA was requested", str(error))
+        else:
+            self.assertEqual(str(device), "cuda")
+
     def test_flatten_metric_row_expands_modality_metrics(self) -> None:
         row = {
             "patient_id": "Patient-001",

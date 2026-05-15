@@ -51,6 +51,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--weight-decay", type=float, default=1e-5)
     parser.add_argument(
+        "--device",
+        choices=("auto", "cpu", "cuda", "mps"),
+        default="auto",
+        help="Device to use for training and evaluation. 'auto' prefers MPS, then CUDA, then CPU.",
+    )
+    parser.add_argument(
         "--history-mode",
         choices=("prefix", "sliding"),
         default="prefix",
@@ -102,7 +108,17 @@ def set_seed(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
-def get_device() -> torch.device:
+def get_device(requested_device: str = "auto") -> torch.device:
+    if requested_device == "cpu":
+        return torch.device("cpu")
+    if requested_device == "cuda":
+        if not torch.cuda.is_available():
+            raise RuntimeError("CUDA was requested with --device cuda, but torch.cuda is not available.")
+        return torch.device("cuda")
+    if requested_device == "mps":
+        if not (torch.backends.mps.is_available() and torch.backends.mps.is_built()):
+            raise RuntimeError("MPS was requested with --device mps, but torch MPS is not available.")
+        return torch.device("mps")
     if torch.backends.mps.is_available() and torch.backends.mps.is_built():
         return torch.device("mps")
     if torch.cuda.is_available():
@@ -1107,7 +1123,7 @@ def run_experiment(
     search_root = data_dir or repo_root
     patient_dirs = resolve_patient_dirs(search_root, patient_names)
 
-    device = get_device()
+    device = get_device(args.device)
     run_dir = repo_root / "runs" / run_name
     run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1252,6 +1268,7 @@ def run_experiment(
         "pretrained_from": pretrained_from,
         "repo_root": str(repo_root),
         "device": str(device),
+        "requested_device": args.device,
         "python_version": sys.version,
         "torch_version": torch.__version__,
         "numpy_version": np.__version__,
