@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Glioblastoma Evolution Project</title>
+    <title>Glioblastoma Evolution Reproducibility Report</title>
     <meta
       name="description"
-      content="GitHub Pages summary of the runnable glioblastoma forecasting scripts and recorded smoke-run outputs."
+      content="Tracked reproducibility summary for the glioblastoma Neural ODE forecasting project, including aggregate cohort metrics, protocol notes, and manuscript figures."
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -14,33 +14,35 @@
     <header>
       <div class="wrap hero">
         <div class="eyebrow">Glioblastoma MRI Forecasting</div>
-        <h1>Runnable forecasting scripts and recorded smoke-run outputs</h1>
+        <h1>Reproducible Neural ODE forecasting on LUMIERE-style longitudinal MRI</h1>
         <p class="lead">
-          This page summarizes the parts of the repository that are currently
-          present and working: the Neural ODE pipeline, the physics-informed
-          pipeline, and the published smoke-run figures stored in the repo.
+          The repository now tracks aggregation code, validation workflow,
+          publication protocol, and cohort-level result tables generated from
+          local <code>run_summary.json</code> files. This page reflects the
+          current reproducibility checkpoint rather than older script-only smoke
+          outputs.
         </p>
         <div class="actions">
           <a class="button primary" href="https://github.com/tushar-nayak/glioblastoma-evolution">View Repository</a>
-          <a class="button" href="https://github.com/tushar-nayak/glioblastoma-evolution/blob/main/scripts/run_neural_ode_pipeline.py">Neural ODE Script</a>
-          <a class="button" href="https://github.com/tushar-nayak/glioblastoma-evolution/blob/main/scripts/run_physics_pipeline.py">Physics Script</a>
+          <a class="button" href="https://github.com/tushar-nayak/glioblastoma-evolution/blob/main/results/lumiere_full_v1_metrics.md">Aggregated Metrics</a>
+          <a class="button" href="https://github.com/tushar-nayak/glioblastoma-evolution/blob/main/PUBLICATION_PROTOCOL.md">Publication Protocol</a>
         </div>
         <div class="metrics">
           <div class="metric">
-            <b>2</b>
-            <span>primary pipeline scripts</span>
+            <b>81</b>
+            <span>tracked patient-level runs</span>
           </div>
           <div class="metric">
-            <b>4</b>
-            <span>modalities handled by the loaders</span>
+            <b>+6.7%</b>
+            <span>mean relative improvement</span>
           </div>
           <div class="metric">
-            <b>4</b>
-            <span>published smoke-run figures</span>
+            <b>65</b>
+            <span>positive-improvement patients</span>
           </div>
           <div class="metric">
-            <b>1</b>
-            <span>GitHub Pages summary for the repo</span>
+            <b>7</b>
+            <span>unit tests in CI</span>
           </div>
         </div>
       </div>
@@ -49,28 +51,45 @@
     <main>
       <section>
         <div class="wrap">
-          <h2>What Is Working</h2>
+          <h2>Current Checkpoint</h2>
           <p class="section-intro">
-            The repository contains two runnable analysis pipelines plus the
-            static site itself. Both scripts compile cleanly, import the
-            declared core dependencies, and expose command-line entry points.
+            The checked-in aggregate table summarizes the local
+            <code>lumiere_full_v1_*</code> runs using the best available metric
+            split per patient, preferring holdout metrics when present and
+            otherwise falling back to older all-sample summaries.
           </p>
-          <div class="grid-2">
+          <div class="metrics metrics-wide">
+            <div class="metric">
+              <b>0.00828323</b>
+              <span>mean model MSE</span>
+            </div>
+            <div class="metric">
+              <b>0.00876673</b>
+              <span>mean persistence MSE</span>
+            </div>
+            <div class="metric">
+              <b>16</b>
+              <span>nonpositive-improvement patients</span>
+            </div>
+          </div>
+          <div class="grid-2 section-grid">
             <div class="panel">
-              <h3>Neural ODE pipeline</h3>
+              <h3>Tracked artifacts</h3>
               <p>
-                <code>scripts/run_neural_ode_pipeline.py</code> implements the
-                history-conditioned model, dataset loading, training loop,
-                evaluation helpers, and figure generation for local patient
-                folders.
+                The repository now includes tracked aggregate outputs in
+                <code>results/lumiere_full_v1_metrics.csv</code>,
+                <code>.json</code>, and <code>.md</code> so the top-line cohort
+                numbers are generated from versioned files rather than copied
+                into prose by hand.
               </p>
             </div>
             <div class="panel">
-              <h3>Physics-informed pipeline</h3>
+              <h3>Runtime provenance</h3>
               <p>
-                <code>scripts/run_physics_pipeline.py</code> provides the 3D
-                physics-informed comparison branch with its own training,
-                evaluation, and reporting path.
+                Each run summary now records Python, Torch, NumPy, requested
+                device, resolved device, and per-split metric CSV paths. The
+                pipeline also exports train, holdout, and baseline CSV tables
+                for every run directory.
               </p>
             </div>
           </div>
@@ -79,35 +98,101 @@
 
       <section>
         <div class="wrap">
-          <h2>Published Artifacts</h2>
+          <h2>Top Runs</h2>
           <p class="section-intro">
-            The repo includes rendered outputs from the smoke runs so the page
-            points to real generated figures rather than placeholders.
+            These rows come directly from
+            <code>results/lumiere_full_v1_metrics.md</code>. At the moment they
+            all use the <code>all</code> split because the older full-run
+            summaries predate the holdout-aware schema.
           </p>
-          <div class="grid-2">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Split</th>
+                  <th>Samples</th>
+                  <th>Model MSE</th>
+                  <th>Baseline MSE</th>
+                  <th>Improvement</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="best">
+                  <td>Patient-028</td>
+                  <td>all</td>
+                  <td>7</td>
+                  <td>0.00386073</td>
+                  <td>0.0123518</td>
+                  <td>+68.7%</td>
+                </tr>
+                <tr class="best">
+                  <td>Patient-004</td>
+                  <td>all</td>
+                  <td>6</td>
+                  <td>0.00336998</td>
+                  <td>0.0104322</td>
+                  <td>+67.7%</td>
+                </tr>
+                <tr class="best">
+                  <td>Patient-066</td>
+                  <td>all</td>
+                  <td>8</td>
+                  <td>0.00379933</td>
+                  <td>0.0114351</td>
+                  <td>+66.8%</td>
+                </tr>
+                <tr class="highlight">
+                  <td>Patient-077</td>
+                  <td>all</td>
+                  <td>8</td>
+                  <td>0.00324765</td>
+                  <td>0.00911861</td>
+                  <td>+64.4%</td>
+                </tr>
+                <tr class="highlight">
+                  <td>Patient-031</td>
+                  <td>all</td>
+                  <td>17</td>
+                  <td>0.00351799</td>
+                  <td>0.00956643</td>
+                  <td>+63.2%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="caption">
+            Final publication claims should come from a frozen rerun where every
+            row uses <code>metric_split=holdout</code>.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <h2>Manuscript Figures</h2>
+          <p class="section-intro">
+            Representative figures are checked into the repository as static
+            manuscript assets. They remain useful as qualitative examples, but
+            the quantitative claims on this page are driven by the tracked
+            result tables.
+          </p>
+          <div class="grid-2 gallery">
             <div class="panel image-frame">
-              <h3>Patient 007</h3>
-              <img
-                src="assets/history_prefix_smoke_patient_007_prediction.png"
-                alt="Prediction and target for patient 007"
-              />
-              <div class="caption">Prediction versus target for the smoke run.</div>
-              <img
-                src="assets/history_prefix_smoke_patient_007_loss.png"
-                alt="Training loss for patient 007"
-              />
+              <h3>Patient-073</h3>
+              <img src="assets/patient_073_forecast.png" alt="Forecast figure for Patient-073" />
             </div>
             <div class="panel image-frame">
-              <h3>Patient 067</h3>
-              <img
-                src="assets/history_prefix_smoke_patient_067_prediction.png"
-                alt="Prediction and target for patient 067"
-              />
-              <div class="caption">Prediction versus target for the smoke run.</div>
-              <img
-                src="assets/history_prefix_smoke_patient_067_loss.png"
-                alt="Training loss for patient 067"
-              />
+              <h3>Patient-023</h3>
+              <img src="assets/patient_023_forecast.png" alt="Forecast figure for Patient-023" />
+            </div>
+            <div class="panel image-frame">
+              <h3>Patient-015</h3>
+              <img src="assets/patient_015_forecast.png" alt="Forecast figure for Patient-015" />
+            </div>
+            <div class="panel image-frame">
+              <h3>Patient-006</h3>
+              <img src="assets/patient_006_forecast.png" alt="Forecast figure for Patient-006" />
             </div>
           </div>
         </div>
@@ -115,25 +200,29 @@
 
       <section>
         <div class="wrap">
-          <h2>Repository Notes</h2>
+          <h2>Publication Track</h2>
           <p class="section-intro">
-            The documentation and manuscript files describe the intended
-            research direction. The GitHub Pages summary stays conservative and
-            only reflects the working code and the checked-in figures.
+            The repository now has a concrete protocol for a frozen rerun. The
+            remaining gap is not infrastructure; it is executing the final
+            cohort run with consistent holdout reporting and manuscript figures
+            regenerated from that run prefix.
           </p>
-          <div class="grid-2">
+          <div class="grid-2 section-grid">
             <div class="panel">
-              <h3>Current scope</h3>
+              <h3>What is locked down</h3>
               <p>
-                Local data loading, model definition, training, evaluation, and
-                figure export are implemented for the included pipelines.
+                Registration manifests, per-run metric CSVs, result aggregation,
+                smoke data generation, explicit device selection, and GitHub
+                Actions validation are all in place.
               </p>
             </div>
             <div class="panel">
-              <h3>Site focus</h3>
+              <h3>What still defines publication</h3>
               <p>
-                The site surfaces the scripts and assets that are already in the
-                repository and avoids claims about larger cohort performance.
+                A final <code>lumiere_publication_v1</code> rerun should use the
+                tracked publication protocol, require holdout rows for every
+                included patient, and regenerate the aggregate table with
+                <code>--split holdout</code>.
               </p>
             </div>
           </div>
@@ -142,8 +231,9 @@
 
       <footer class="footer">
         <div class="wrap">
-          Updated GitHub Pages summary for the currently working repository
-          contents.
+          Updated to reflect the reproducibility checkpoint in
+          <code>results/lumiere_full_v1_metrics.*</code> and the frozen-run plan
+          in <code>PUBLICATION_PROTOCOL.md</code>.
         </div>
       </footer>
     </main>
