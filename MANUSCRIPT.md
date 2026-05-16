@@ -21,6 +21,17 @@ The repository implements:
 - **Persistence baseline**: A latest-history target-slice baseline evaluated with the same MSE, MAE, modality-level, and FLAIR-volume metrics.
 - **Metric aggregation**: `scripts/summarize_run_metrics.py` creates CSV, JSON, and Markdown tables from run summaries and records which metric split was used.
 
+### 2.1 Evaluation Metrics
+Evaluation is reported at the patient-run level and then aggregated across runs.
+
+- **Primary metric**: mean squared error (MSE) averaged across the predicted FLAIR, T1, T2, and CT1 target slice stacks.
+- **Secondary metric**: mean absolute error (MAE), reported with the same modality averaging.
+- **Per-modality reporting**: separate MSE and MAE values are retained for each modality so gains are not hidden by the cross-modal average.
+- **Morphologic proxy**: relative FLAIR volume difference, computed from thresholded predicted and target FLAIR slices, is tracked as a coarse shape-consistency measure.
+- **Baseline comparison**: relative improvement is defined as `(baseline_mse - model_mse) / baseline_mse`, where the baseline copies the latest available history slice stack into the target week.
+
+The current tracked cohort table mixes metric splits across older runs: it prefers holdout summaries when available and otherwise falls back to all-sample summaries. That makes it useful as a reproducibility checkpoint, but not yet as a final locked evaluation benchmark.
+
 ---
 
 ## 3. Reproducibility Checkpoint Results
@@ -56,6 +67,9 @@ Aggregate across the 81 tracked rows:
 #### Patient-073
 ![Patient-073 Result](manuscript_assets/patient_073_forecast.png)
 
+#### Patient-004
+![Patient-004 Result](manuscript_assets/patient_004_forecast.png)
+
 #### Patient-023
 ![Patient-023 Result](manuscript_assets/patient_023_forecast.png)
 
@@ -73,19 +87,9 @@ Aggregate across the 81 tracked rows:
 ## 4. Discussion
 The current aggregate results suggest that the learned Neural ODE model can outperform persistence for many patient-level runs, but the average improvement is modest and mixed across patients. The persistence baseline remains difficult to beat and should remain the primary comparator in any publication draft.
 
-The strongest next step is to rerun the full cohort with the current code so every patient has the same independent holdout protocol, current metadata schema, and tracked aggregation outputs. Only that frozen run should be used for clinical claims.
+Because the older `lumiere_full_v1_*` summaries are dominated by all-sample metrics, the main quantitative table should be read as a measured checkpoint of engineering progress rather than a final clinical claim. A final benchmark should come from a consistent holdout-only rerun with the same metrics and baseline definitions already encoded in the repository.
 
-## 5. Publication Checklist
-
-- Lock the final train/validation/test protocol before rerunning full-cohort experiments.
-- Report independent holdout metrics for every eligible patient.
-- Include the persistence baseline in all primary tables.
-- Commit final aggregate CSV/JSON/Markdown tables generated from the frozen run summaries.
-- Regenerate all manuscript figures from the final frozen run outputs.
-- Add dataset access, data-use, and ethics language appropriate to LUMIERE.
-- Record software versions, hardware, random seeds, and run commands.
-
-## 6. Conclusion
+## 5. Conclusion
 The repository is now a reproducible research scaffold for GBM forecasting experiments with history-conditioned Neural ODEs. It is not yet a final clinical benchmark, but it has the core components required to produce one: deterministic smoke data, preprocessing manifests, run summaries, aggregation scripts, tests, CI, and explicit baseline reporting.
 
 ---
